@@ -249,7 +249,7 @@ class SourceEditPage(Adw.NavigationPage):
             cmd = ["bash", "-c", pkg]
             ck = "path"
 
-        labels = dict(zip(self._SOURCE_KEYS, self._SOURCE_LABELS))
+        labels = dict(zip(self._SOURCE_KEYS, self._SOURCE_LABELS, strict=True))
         new_src = {
             "label": labels.get(src_type, ""),
             "cmd": cmd,

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import re
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 PrivilegedRunner = Callable[[list[str], Callable[[str], None]], bool]
 

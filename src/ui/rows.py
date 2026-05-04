@@ -2,6 +2,7 @@
 import os
 import subprocess
 import threading
+from pathlib import Path
 
 import gi
 
@@ -39,57 +40,9 @@ class _AppTrailingCluster(Gtk.Box):
         return (min_b, nat_b, min_base, nat_base)
 
 
+_style_path = Path(__file__).resolve().parent / "style.css"
 _badge_css = Gtk.CssProvider()
-_badge_css.load_from_data(b"""
-    .ab-source-badge {
-        font-size: 0.72em;
-        min-height: 0;
-        padding: 2px 8px;
-        border-radius: 999px;
-        background-color: alpha(currentColor, 0.10);
-    }
-    .ab-source-badge.success {
-        color: @success_color;
-        background-color: alpha(@success_color, 0.15);
-    }
-    .ab-source-badge.warning {
-        color: @warning_color;
-        background-color: alpha(@warning_color, 0.15);
-    }
-    .ab-source-badge.accent {
-        color: @accent_color;
-        background-color: alpha(@accent_color, 0.18);
-    }
-    .ab-source-badge.error {
-        color: @error_color;
-        background-color: alpha(@error_color, 0.15);
-    }
-    .ab-source-badge.dim-label {
-        opacity: 0.55;
-    }
-    /* Match .ab-source-badge MenuButton height and padding. */
-    button.ab-app-row-install.suggested-action {
-        font-size: 0.72em;
-        font-weight: 600;
-        min-height: 26px;
-        padding: 2px 8px;
-        border-radius: 999px;
-    }
-    /* Trailing cluster wraps only the actions column now. */
-    box.ab-app-row-trailing-cluster {
-        min-width: 560px;
-    }
-    box.ab-app-row-actions-column {
-        min-width: 560px;
-    }
-    menubutton.ab-app-row-src-menu {
-        min-width: 0;
-    }
-    menubutton.ab-app-row-src-menu button {
-        padding-left: 6px;
-        padding-right: 6px;
-    }
-""")
+_badge_css.load_from_path(str(_style_path))
 
 _ab_source_badge_css_registered = False
 

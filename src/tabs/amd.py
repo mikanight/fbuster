@@ -22,7 +22,7 @@ class AmdPage(DynamicPage):
 
     def check_overclock(self):
         try:
-            with open("/proc/cmdline", "r") as f:
+            with open("/proc/cmdline") as f:
                 cmdline = f.read()
             return "amdgpu.ppfeaturemask=0xffffffff" in cmdline
         except Exception:
@@ -33,7 +33,7 @@ class AmdPage(DynamicPage):
 
         def _do():
             try:
-                with open("/etc/default/grub", "r") as f:
+                with open("/etc/default/grub") as f:
                     lines = f.readlines()
             except Exception as e:
                 GLib.idle_add(self._log, f"✘  Ошибка чтения GRUB: {e}\n")

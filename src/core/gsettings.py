@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import subprocess
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def run_gsettings(args: Sequence[str]) -> bool:

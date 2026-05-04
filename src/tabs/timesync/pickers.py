@@ -288,7 +288,7 @@ class FlatpakDataPickerDialog(Adw.Window):
             self._selected.discard(name)
 
     def _set_all(self, state: bool):
-        for name, (row, cb) in self._row_map.items():
+        for _name, (row, cb) in self._row_map.items():
             if row.get_visible():
                 cb.set_active(state)
 

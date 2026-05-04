@@ -82,7 +82,7 @@ class TestShellWrapper:
 
     def test_paths_updated(self):
         s = read_file("fedorabooster")
-        assert "/usr/share/fedorabooster/altbooster.py" in s
+        assert "/usr/local/share/fedorabooster/altbooster.py" in s
 
 
 class TestIconFiles:

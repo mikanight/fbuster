@@ -10,8 +10,8 @@ import tempfile
 import threading
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import gi
 
@@ -790,7 +790,7 @@ class ExtensionsPage(Gtk.Box):
                 try:
                     r = subprocess.run(["gnome-extensions", "list"], capture_output=True, text=True)
                     if r.returncode == 0:
-                        installed_uuids = set(line.strip() for line in r.stdout.splitlines() if line.strip())
+                        installed_uuids = {line.strip() for line in r.stdout.splitlines() if line.strip()}
                 except Exception:
                     pass
 

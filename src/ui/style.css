@@ -1,0 +1,151 @@
+.ab-update-dot {
+    background-color: @accent_color;
+    border-radius: 999px;
+    min-width: 9px;
+    min-height: 9px;
+    border: 1.5px solid @window_bg_color;
+    padding: 0;
+    font-size: 0;
+}
+statuspage.compact scrolledwindow scrollbar {
+    opacity: 0;
+    min-width: 0;
+    min-height: 0;
+}
+.ab-float-banner {
+    background-color: alpha(@card_bg_color, 0.9);
+    border-radius: 20px;
+    padding: 5px 14px 5px 16px;
+    border: 1px solid alpha(@borders, 0.4);
+}
+.ab-float-banner label {
+    font-size: 0.82em;
+}
+.ab-main-content {
+    box-shadow: inset 6px 0 10px -6px alpha(black, 0.3);
+}
+headerbar {
+    box-shadow: 0 1px 6px alpha(black, 0.18);
+}
+/* Same column width as op card stretched the search button - fixed square */
+button.ab-global-search-btn {
+    min-width: 42px;
+    min-height: 42px;
+    padding: 0;
+}
+button.ab-global-search-btn image {
+    -gtk-icon-size: 22px;
+}
+.ab-log-terminal-panel {
+    padding: 0;
+}
+expander.ab-log-expander-compact {
+    margin: 0;
+    padding: 0;
+}
+expander.ab-log-expander-compact > box > label {
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+.ab-icon-green { color: @success_color; }
+.ab-icon-red   { color: @error_color;   }
+.ab-op-floating-card {
+    background-image: none;
+    background-color: @theme_bg_color;
+    border: 1px solid @borders;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px alpha(black, 0.28);
+    opacity: 1;
+    padding: 12px 20px 14px 20px;
+}
+.ab-log-overlay-backdrop {
+    background-color: alpha(black, 0.62);
+}
+.ab-log-overlay-card {
+    background-color: @card_bg_color;
+    border-radius: 16px;
+    border: 1px solid alpha(@borders, 0.85);
+    box-shadow: 0 8px 28px alpha(black, 0.22);
+}
+.ab-log-overlay-header {
+    padding: 10px 10px 8px 16px;
+    border-bottom: 1px solid alpha(@borders, 0.4);
+}
+.ab-log-overlay-card scrolledwindow {
+    border-radius: 0 0 15px 15px;
+}
+.ab-log-overlay-card textview {
+    background-color: @view_bg_color;
+    border-radius: 0 0 15px 15px;
+}
+.ab-log-overlay-card textview > text {
+    background-color: @view_bg_color;
+    border-radius: 0 0 15px 15px;
+}
+/* TimeSync tabs: align icon + label in header */
+viewswitcher.ab-borg-viewswitcher {
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+viewswitcher.ab-borg-viewswitcher button.toggle > stack > box.wide {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-spacing: 8px;
+}
+viewswitcher.ab-borg-viewswitcher button.toggle > stack > box.wide > label {
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+viewswitcher.ab-borg-viewswitcher button.toggle > stack > box.wide > image {
+    -gtk-icon-size: 18px;
+}
+
+/* Source badge styles (rows.py) */
+.ab-source-badge {
+    font-size: 0.72em;
+    min-height: 0;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background-color: alpha(currentColor, 0.10);
+}
+.ab-source-badge.success {
+    color: @success_color;
+    background-color: alpha(@success_color, 0.15);
+}
+.ab-source-badge.warning {
+    color: @warning_color;
+    background-color: alpha(@warning_color, 0.15);
+}
+.ab-source-badge.accent {
+    color: @accent_color;
+    background-color: alpha(@accent_color, 0.18);
+}
+.ab-source-badge.error {
+    color: @error_color;
+    background-color: alpha(@error_color, 0.15);
+}
+.ab-source-badge.dim-label {
+    opacity: 0.55;
+}
+/* Match .ab-source-badge MenuButton height and padding. */
+button.ab-app-row-install.suggested-action {
+    font-size: 0.72em;
+    font-weight: 600;
+    min-height: 26px;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+/* Trailing cluster wraps only the actions column now. */
+box.ab-app-row-trailing-cluster {
+    min-width: 560px;
+}
+box.ab-app-row-actions-column {
+    min-width: 560px;
+}
+menubutton.ab-app-row-src-menu {
+    min-width: 0;
+}
+menubutton.ab-app-row-src-menu button {
+    padding-left: 6px;
+    padding-right: 6px;
+}

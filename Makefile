@@ -1,5 +1,5 @@
-PREFIXBIN=/usr/bin
-SHAREDIR=/usr/share
+PREFIXBIN=/usr/local/bin
+SHAREDIR=/usr/local/share
 NAME=fedorabooster
 
 install: install-data install-bin

@@ -4,8 +4,9 @@ import os
 import shutil
 import subprocess
 import threading
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Callable
+from typing import Any
 
 import gi
 
@@ -126,7 +127,7 @@ def run_check(check: dict | None) -> bool:
 
 
 class _SafePage:
-    def __init__(self, real_page: "DynamicPage") -> None:
+    def __init__(self, real_page: DynamicPage) -> None:
         self._page = real_page
 
     def log(self, text: str) -> None:

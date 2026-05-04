@@ -58,6 +58,4 @@ class TestIsSystemBusy:
             assert checks.is_system_busy() is False
 
 
-class TestIsEpmInstalled:
-    def test_always_returns_false(self):
-        assert checks.is_epm_installed() is False
+

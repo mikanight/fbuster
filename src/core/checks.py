@@ -239,5 +239,4 @@ def is_fairlight_installed() -> bool:
         return False
 
 
-def is_epm_installed() -> bool:
-    return False
+

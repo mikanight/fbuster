@@ -4,11 +4,12 @@ import os
 import re
 import shlex
 import shutil
+import signal
 import subprocess
 import threading
 import time
 import uuid
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 from gi.repository import GLib
 
@@ -17,13 +18,11 @@ from core import config
 OnLine = Callable[[str], None]
 OnDone = Callable[[bool], None]
 
-_current_proc: subprocess.Popen | None = None
-_current_proc_lock = threading.Lock()
-
-_stdbuf: list[str] = ["stdbuf", "-oL"] if shutil.which("stdbuf") else []
-
 _pkexec_shell_proc: subprocess.Popen | None = None
 _pkexec_shell_lock = threading.Lock()
+
+_running_command_pid: int | None = None
+_running_command_lock = threading.Lock()
 
 
 def _get_pkexec_shell() -> subprocess.Popen | None:
@@ -49,11 +48,12 @@ def _get_pkexec_shell() -> subprocess.Popen | None:
 
 
 def cancel_current() -> None:
-    proc = _pkexec_shell_proc
-    if proc and proc.poll() is None:
+    with _running_command_lock:
+        pid = _running_command_pid
+    if pid is not None:
         try:
-            proc.terminate()
-        except Exception:
+            os.kill(pid, signal.SIGTERM)
+        except OSError:
             pass
 
 
@@ -144,45 +144,13 @@ def _wait_for_dnf_lock(on_line: OnLine | None = None, timeout: int = 60) -> bool
         time.sleep(5)
     return False
 
-def _apt_dedup_filter(on_line: OnLine) -> OnLine:
-    _WARN_PATTERNS = (
-        "There are multiple versions of",
-        "won't be cleanly updated",
-        "only one version",
-        "To leave multiple versions installed",
-        "you may remove that warning",
-        "option in your configuration file",
-        "RPM:",
-        "To disable these warnings completely set",
-        "You may want to run dnf makecache to correct",
-        "В Вашей системе установлено несколько версий пакета",
-        "Этот пакет не может быть обновлён обычным путём",
-        "оставите только одну его версию",
-        "Чтобы оставить установленными несколько версий",
-    )
-    in_warn = False
-
-    def _filtered(line: str) -> None:
-        nonlocal in_warn
-        if "There are multiple versions of" in line:
-            in_warn = True
-        if in_warn:
-            if not line.strip():
-                return
-            if any(pat in line for pat in _WARN_PATTERNS):
-                return
-            in_warn = False
-        on_line(line)
-
-    return _filtered
-
-
 def _run_pkexec(cmd: Sequence[str], on_line: OnLine | None, on_done: OnDone) -> None:
     def _emit(line: str) -> None:
         if on_line is not None:
             GLib.idle_add(on_line, line)
 
     def _worker() -> None:
+        global _running_command_pid
         check_lock = False
         if cmd:
             if cmd[0] in ("apt", "apt-get", "flatpak", "dnf", "dnf5"):
@@ -202,10 +170,18 @@ def _run_pkexec(cmd: Sequence[str], on_line: OnLine | None, on_done: OnDone) -> 
                 return
 
             marker = f"__AB_EXIT__{uuid.uuid4().hex}__"
+            pid_marker = f"__AB_PID__{uuid.uuid4().hex}__"
             exit_line_re = re.compile(rf"^{re.escape(marker)}\s+(-?\d+)\s*$")
+            pid_line_re = re.compile(rf"^{re.escape(pid_marker)}\s+(\d+)\s*$")
             cmd_str = shlex.join(cmd)
+
+            _has_stdbuf = shutil.which("stdbuf")
+            stdbuf_prefix = "stdbuf -oL " if _has_stdbuf else ""
             script = (
-                f"(stdbuf -oL {cmd_str}) 2>&1; "
+                f"({stdbuf_prefix}{cmd_str}) 2>&1 &\n"
+                f"_AB_PID=$!\n"
+                f"printf '%s %s\\n' '{pid_marker}' \"$_AB_PID\"\n"
+                f"wait $_AB_PID\n"
                 f"printf '%s %s\\n' '{marker}' \"$?\"\n"
             )
 
@@ -222,6 +198,17 @@ def _run_pkexec(cmd: Sequence[str], on_line: OnLine | None, on_done: OnDone) -> 
                             break
 
                         stripped = line.rstrip("\r\n")
+
+                        pm = pid_line_re.match(stripped)
+                        if pm:
+                            try:
+                                cmd_pid = int(pm.group(1))
+                                with _running_command_lock:
+                                    _running_command_pid = cmd_pid
+                            except ValueError:
+                                pass
+                            continue
+
                         m = exit_line_re.match(stripped)
                         if m:
                             try:
@@ -233,6 +220,9 @@ def _run_pkexec(cmd: Sequence[str], on_line: OnLine | None, on_done: OnDone) -> 
                         _emit(line)
             except (BrokenPipeError, OSError):
                 _emit("⚠  Root-сессия была прервана.\n")
+            finally:
+                with _running_command_lock:
+                    _running_command_pid = None
 
             GLib.idle_add(on_done, success)
 

@@ -65,7 +65,7 @@ class TestAptGetCleanups:
     def test_privileges_py_apt_error_hint_replaced(self):
         s = read_file("core/privileges.py")
         assert "You may want to run apt-get update to correct" not in s
-        assert "You may want to run dnf makecache to correct" in s
+        assert "_apt_dedup_filter" not in s
 
 
 class TestPaths:

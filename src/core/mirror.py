@@ -66,7 +66,9 @@ def get_root_device() -> str | None:
         return None
 
 
-def get_root_partition_disk(device: str) -> str:
+def get_root_partition_disk(device: str | None) -> str:
+    if device is None:
+        return ""
     return re.sub(r"p?\d+$", "", device)
 
 
@@ -538,7 +540,7 @@ def restore_to_disk(mirror_dir: str, target_device: str, on_line, on_done):
         from gi.repository import GLib
 
         env = os.environ.copy()
-        env["TARGET_DISK"] = target_device.lstrip("/dev/") if target_device.startswith("/dev/") else target_device
+        env["TARGET_DISK"] = target_device.removeprefix("/dev/") if target_device.startswith("/dev/") else target_device
         env["NEWSYNC_AUTO"] = "1"
 
         auto_script = _build_auto_restore_script(mirror_dir, target_device, info)

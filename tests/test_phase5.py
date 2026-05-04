@@ -129,4 +129,4 @@ class TestPyproject:
 
     def test_urls_updated(self):
         s = (Path(__file__).parent.parent / "pyproject.toml").read_text()
-        assert "mikanight/fedorabooster" in s
+        assert "mikanight/fbuster" in s

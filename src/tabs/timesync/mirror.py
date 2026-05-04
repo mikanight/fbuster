@@ -701,11 +701,7 @@ class MirrorPage(Gtk.Box):
         self._btrfs_restore_source = path
         if has_restore_btn:
             self._btrfs_restore_btn.set_visible(t in ("btrfs", "btrfs_recv"))
-        if t == "btrfs":
-            self._btrfs_dest_info_row.set_subtitle(
-                f"Доступно для восстановления со следующими субволюмами: {', '.join(subvols)} - {size_str} - дата создания: {date_str}"
-            )
-        elif t == "btrfs_recv":
+        if t == "btrfs" or t == "btrfs_recv":
             self._btrfs_dest_info_row.set_subtitle(
                 f"Доступно для восстановления со следующими субволюмами: {', '.join(subvols)} - {size_str} - дата создания: {date_str}"
             )

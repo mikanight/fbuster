@@ -517,7 +517,7 @@ class BorgBackupSummaryDialog(Adw.Window):
         apps = data.get("flatpak_apps")
         flatpak_dirs = data.get("flatpak_data_dirs")
         if apps is not None:
-            data_map = {d: s for d, s in flatpak_dirs} if flatpak_dirs is not None else {}
+            data_map = dict(flatpak_dirs) if flatpak_dirs is not None else {}
             with_data = sum(1 for _, app_id, _ in apps if app_id in data_map)
             total = data.get("flatpak_data_total", "")
 
