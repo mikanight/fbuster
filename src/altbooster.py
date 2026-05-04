@@ -25,7 +25,7 @@ _TAB_FLAGS = {
 def main() -> int:
     if "-h" in sys.argv or "--help" in sys.argv:
         print(
-            "Использование: altbooster [ОПЦИЯ]\n\n"
+            "Использование: fedorabooster [ОПЦИЯ]\n\n"
             "Опции:\n"
             "  -s    Открыть вкладку «Начало»\n"
             "  -a    Открыть вкладку «Приложения»\n"
@@ -55,7 +55,7 @@ def main() -> int:
             traceback.print_exception(exc_type, exc_value, exc_tb, file=sys.stderr)
 
         sys.excepthook = _excepthook
-        print(f"[DEBUG] ALT Booster запущен в режиме отладки. Python {sys.version}")
+        print(f"[DEBUG] Fedora Booster запущен в режиме отладки. Python {sys.version}")
 
     import gi
 
@@ -70,10 +70,10 @@ def main() -> int:
 
     from ui import PlafonWindow
 
-    class AltBoosterApp(Adw.Application):
+    class FedoraBoosterApp(Adw.Application):
         def __init__(self):
             super().__init__(
-                application_id="ru.altbooster.app",
+                application_id="org.fedorabooster.app",
                 flags=Gio.ApplicationFlags.FLAGS_NONE,
             )
             self.connect("activate", self._on_activate)
@@ -88,7 +88,7 @@ def main() -> int:
             win.ask_password()
 
     try:
-        return int(AltBoosterApp().run(sys.argv))
+        return int(FedoraBoosterApp().run(sys.argv))
     except KeyboardInterrupt:
         return 0
 

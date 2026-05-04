@@ -24,7 +24,7 @@ from tabs.system76_scheduler import System76SchedulerTweaksSection
 
 _ANANICY_RULES_REPO = "https://github.com/CachyOS/ananicy-rules"
 _ANANICY_RULES_DIR  = "/etc/ananicy.d/cachyos-rules"
-_ALT_ZERO_GUIDE_URL = "https://plafon.gitbook.io/alt-zero"
+_FEDORA_BOOSTER_GUIDE_URL = "https://fedoraproject.org/wiki/Fedora_Booster"
 
 _KERNEL_SCHED_SEARCH_IDS = frozenset({"sched_ext", "scx", "intel_scx_meteor"})
 _USERSPACE_SCHED_SEARCH_IDS = frozenset({"ananicy", "system76_scheduler"})
@@ -167,7 +167,7 @@ class TweaksPage(Gtk.Box):
 
     def _on_alt_zero_guide_clicked(self, _btn):
         try:
-            Gio.AppInfo.launch_default_for_uri(_ALT_ZERO_GUIDE_URL, None)
+            Gio.AppInfo.launch_default_for_uri(_FEDORA_BOOSTER_GUIDE_URL, None)
         except GLib.Error:
             pass
 

@@ -57,7 +57,7 @@
           "button_label": "Установить",
           "button_done_label": "Установлен",
           "check": { "type": "which", "value": "lact" },
-          "action": { "type": "epm", "cmd": ["epm", "-i", "lact"] }
+          "action": { "type": "privileged", "cmd": ["dnf", "install", "-y", "lact"] }
         },
         {
           "id": "lactd_enable",

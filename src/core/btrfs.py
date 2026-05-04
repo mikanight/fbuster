@@ -239,19 +239,9 @@ def write_btrfs_systemd_units(interval_hours: int, keep_count: int) -> bool:
 
     service_content = (
         "[Unit]\n"
-        "Description=ALT Booster - Btrfs Snapshot\n\n"
-        "[Service]\n"
-        "Type=oneshot\n"
-        f"ExecStart=pkexec bash -c '{snapshot_cmd}'\n"
-        f"ExecStartPost=-pkexec bash -c '{prune_cmd}'\n"
-    )
-
-    calendar_map = {1: "hourly", 6: "*-*-* 0/6:00:00", 24: "daily"}
-    calendar_expr = calendar_map.get(interval_hours, "hourly")
-
-    timer_content = (
-        "[Unit]\n"
-        "Description=ALT Booster - Btrfs Snapshot Timer\n\n"
+        "Description=Fedora Booster - Btrfs Snapshot\n\n"
+...
+        "Description=Fedora Booster - Btrfs Snapshot Timer\n\n"
         "[Timer]\n"
         f"OnCalendar={calendar_expr}\n"
         "Persistent=true\n\n"

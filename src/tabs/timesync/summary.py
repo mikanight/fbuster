@@ -521,7 +521,7 @@ class BorgBackupSummaryDialog(Adw.Window):
             total = data.get("flatpak_data_total", "")
 
             source_mode = data.get("flatpak_apps_source", 0)
-            source_label = "ALT Booster" if source_mode == 1 else "установленные"
+            source_label = "Fedora Booster" if source_mode == 1 else "установленные"
             badge = str(len(apps)) + f" приложений  ·  {source_label}"
             if flatpak_dirs is not None:
                 badge += f"  ·  с данными: {with_data}"

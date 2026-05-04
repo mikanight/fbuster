@@ -3,21 +3,21 @@ requires = ['setuptools']
 build-backend = 'setuptools.build_meta'
 
 [project]
-name = "altbooster"
-version = "5.6.9"
-description = "Утилита настройки и обслуживания ALT Linux"
+name = "fedorabooster"
+version = "6.0.0"
+description = "Утилита настройки и обслуживания Fedora Linux"
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "PLAFON" }]
 requires-python = ">=3.11"
 
 [project.urls]
-Homepage   = "https://github.com/plafonlinux/altbooster"
-Repository = "https://github.com/plafonlinux/altbooster"
-Issues     = "https://github.com/plafonlinux/altbooster/issues"
+Homepage   = "https://github.com/mikanight/fedorabooster"
+Repository = "https://github.com/mikanight/fedorabooster"
+Issues     = "https://github.com/mikanight/fedorabooster/issues"
 
 [project.scripts]
-altbooster = "altbooster:main"
+fedorabooster = "altbooster:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

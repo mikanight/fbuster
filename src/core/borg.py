@@ -876,7 +876,7 @@ def restore_packages_meta(meta_dir: Path, on_line, on_done, only_missing: bool =
         on_line,
         "▶  Установка отсутствующих RPM-пакетов...\n" if only_missing else "▶  Переустановка RPM-пакетов...\n",
     )
-    privileges.run_privileged(["epm", "install", "-y", *packages], on_line, on_done)
+    privileges.run_privileged(["dnf", "install", "-y", *packages], on_line, on_done)
 
 
 def restore_flatpak_meta(meta_dir: Path, on_line, on_done) -> None:
@@ -968,7 +968,7 @@ def write_systemd_units(repo_path: str, paths: list[str], calendar_expr: str) ->
 
     service_content = (
         "[Unit]\n"
-        "Description=ALT Booster — резервное копирование\n\n"
+        "Description=Fedora Booster — резервное копирование\n\n"
         "[Service]\n"
         "Type=oneshot\n"
         f"EnvironmentFile={_BORG_ENV_FILE}\n"
@@ -984,7 +984,7 @@ def write_systemd_units(repo_path: str, paths: list[str], calendar_expr: str) ->
 
     timer_content = (
         "[Unit]\n"
-        "Description=ALT Booster — таймер резервного копирования\n\n"
+        "Description=Fedora Booster — таймер резервного копирования\n\n"
         "[Timer]\n"
         f"OnCalendar={calendar_expr}\n"
         "Persistent=true\n\n"

@@ -343,8 +343,8 @@ def generate_newsync_ext4(dest_dir: str, device: str, uefi: bool, fmt: str) -> b
     disk = get_root_partition_disk(device)
     lines = [
         "#!/bin/bash",
-        "# newsync.sh — скрипт восстановления EXT4-системы из зеркала ALT Booster",
-        "# Запускать с LiveUSB ALT Linux от имени root",
+        "# newsync.sh — скрипт восстановления EXT4-системы из зеркала Fedora Booster",
+        "# Запускать с LiveUSB Fedora от имени root",
         "set -e",
         "",
         'MIRROR_DIR="$(dirname "$(realpath "$0")")"',
@@ -430,8 +430,8 @@ def generate_newsync_btrfs(dest_dir: str, device: str, subvolumes: list[str], ue
 
     lines = [
         "#!/bin/bash",
-        "# newsync.sh — скрипт восстановления Btrfs-системы из зеркала ALT Booster",
-        "# Запускать с LiveUSB ALT Linux от имени root",
+        "# newsync.sh — скрипт восстановления Btrfs-системы из зеркала Fedora Booster",
+        "# Запускать с LiveUSB Fedora от имени root",
         "set -e",
         "",
         'MIRROR_DIR="$(dirname "$(realpath "$0")")"',

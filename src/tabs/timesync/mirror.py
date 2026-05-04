@@ -467,7 +467,7 @@ class MirrorPage(Gtk.Box):
 
         self._sv_snap_group = Adw.PreferencesGroup()
         self._sv_snap_group.set_title("Сохранённые копии")
-        self._sv_snap_group.set_description("Снимки созданные ALT Booster — не копируются")
+        self._sv_snap_group.set_description("Снимки созданные Fedora Booster — не копируются")
         self._sv_snap_group.set_visible(False)
         self._sv_snap_rows: list[Adw.ActionRow] = []
 

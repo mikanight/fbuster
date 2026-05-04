@@ -1,3 +1,3 @@
-from ui.window import AltBoosterWindow
+from ui.window import FedoraBoosterWindow
 
-PlafonWindow = AltBoosterWindow
+PlafonWindow = FedoraBoosterWindow

@@ -106,7 +106,7 @@ def run_check(check: dict | None) -> bool:
                 return False
 
     if config.DEBUG:
-        print(f"[ALT Booster] run_check: неизвестный тип '{kind}'")
+        print(f"[Fedora Booster] run_check: неизвестный тип '{kind}'")
     return False
 
 

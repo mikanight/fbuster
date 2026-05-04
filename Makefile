@@ -1,6 +1,6 @@
 PREFIXBIN=/usr/bin
 SHAREDIR=/usr/share
-NAME=altbooster
+NAME=fedorabooster
 
 install: install-data install-bin
 

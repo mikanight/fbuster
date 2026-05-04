@@ -662,7 +662,7 @@ class TerminalPage(Gtk.Box):
         if not p.exists():
             return False
         try:
-            return "# --- ALT Booster Aliases ---" in p.read_text(encoding="utf-8", errors="ignore")
+            return "# --- Fedora Booster Aliases ---" in p.read_text(encoding="utf-8", errors="ignore")
         except Exception:
             return False
 
@@ -724,8 +724,8 @@ class TerminalPage(Gtk.Box):
             content = p.read_text(encoding="utf-8") if p.exists() else ""
             
             final_text = text
-            if "# --- ALT Booster Aliases ---" not in final_text:
-                final_text = "# --- ALT Booster Aliases ---\n" + final_text
+            if "# --- Fedora Booster Aliases ---" not in final_text:
+                final_text = "# --- Fedora Booster Aliases ---\n" + final_text
             if "# ---------------------------" not in final_text:
                 final_text = final_text.strip() + "\n# ---------------------------"
             
@@ -734,7 +734,7 @@ class TerminalPage(Gtk.Box):
             if not final_text.endswith("\n"):
                 final_text = final_text + "\n"
 
-            if "# --- ALT Booster Aliases ---" not in content:
+            if "# --- Fedora Booster Aliases ---" not in content:
                 with open(p, "a", encoding="utf-8") as f:
                     f.write(final_text)
             GLib.idle_add(row.set_done, True)
@@ -751,14 +751,14 @@ class TerminalPage(Gtk.Box):
             p = Path(os.path.expanduser("~/.zshrc"))
             if p.exists():
                 content = p.read_text(encoding="utf-8")
-                if "# --- ALT Booster Aliases ---" in content:
+                if "# --- Fedora Booster Aliases ---" in content:
                     new_content = content.replace(_ALIASES_BLOCK, "")
                     if new_content == content:
                         lines = content.splitlines()
                         new_lines = []
                         skip = False
                         for line in lines:
-                            if line.strip() == "# --- ALT Booster Aliases ---":
+                            if line.strip() == "# --- Fedora Booster Aliases ---":
                                 skip = True
                             if not skip:
                                 new_lines.append(line)
@@ -855,7 +855,7 @@ class TerminalPage(Gtk.Box):
         def _sync_aliases():
             p = Path(os.path.expanduser("~/.zshrc"))
             content = p.read_text(encoding="utf-8") if p.exists() else ""
-            if "# --- ALT Booster Aliases ---" not in content:
+            if "# --- Fedora Booster Aliases ---" not in content:
                 text = _ALIASES_BLOCK.strip()
                 if not text.startswith("\n"): text = "\n" + text
                 if not text.endswith("\n"): text = text + "\n"

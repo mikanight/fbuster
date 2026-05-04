@@ -60,7 +60,7 @@ class AppsPage(Gtk.Box):
         search_box.set_hexpand(True)
 
         self._branch_combo = Gtk.DropDown()
-        self._branch_combo.set_model(Gtk.StringList.new(["p11", "Sisyphus", "epm play", "Flathub"]))
+        self._branch_combo.set_model(Gtk.StringList.new(["Fedora", "RPM Fusion", "COPR", "Flathub"]))
         self._epm_play_cache = None
         self._branch_combo.set_selected(0)
         self._branch_combo.set_valign(Gtk.Align.CENTER)
@@ -162,8 +162,8 @@ class AppsPage(Gtk.Box):
         self._branch_combo.set_sensitive(False)
         clear_status(self._search_status)
         self._clear_pkg_search_results()
-        branch_map = {0: "p11", 1: "sisyphus", 2: "epm_play", 3: "flathub"}
-        branch = branch_map.get(self._branch_combo.get_selected(), "p11")
+        branch_map = {0: "fedora", 1: "rpmfusion", 2: "copr", 3: "flathub"}
+        branch = branch_map.get(self._branch_combo.get_selected(), "fedora")
         if branch == "epm_play":
             self._epm_play_cache = None
         threading.Thread(target=self._do_pkg_search, args=(text, branch), daemon=True).start()
@@ -216,7 +216,7 @@ class AppsPage(Gtk.Box):
                 GLib.idle_add(self._display_pkg_results, [(branch, primary)], False)
             else:
                 GLib.idle_add(self._log, "ℹ Не найдено в выбранном источнике, ищу в других...\n")
-                all_branches = ["p11", "sisyphus", "epm_play", "flathub"]
+                all_branches = ["fedora", "rpmfusion", "copr", "flathub"]
                 other_branches = [ob for ob in all_branches if ob != branch]
                 fallback_map = {}
                 with ThreadPoolExecutor(max_workers=len(other_branches)) as executor:
@@ -308,7 +308,7 @@ class AppsPage(Gtk.Box):
             self._log("ℹ Пакеты не найдены ни в одном источнике.\n")
             return
         set_status_ok(self._search_status)
-        label_map = {"flathub": "Flathub", "p11": "p11", "sisyphus": "Sisyphus", "epm_play": "EPM Play"}
+        label_map = {"flathub": "Flathub", "fedora": "Fedora", "rpmfusion": "RPM Fusion", "copr": "COPR"}
         title_prefix = "Найдено в" if is_fallback else "Результаты в"
         prev = self._btns_box
         for branch, results in branch_results_list:
@@ -397,12 +397,11 @@ class AppsPage(Gtk.Box):
 
         lid = install_id.lower()
         if lid in ("furmark", "occt", "yandex-browser", "chrome", "google-chrome-stable"):
-            install_type = "epm_play"
-            branch = "epm_play"
+            install_type = "flatpak"
+            branch = "flathub"
         elif lid in ("firefox", "yandex-browser-stable"):
-            install_type = "epm"
-            if branch not in ("p11", "Sisyphus"):
-                branch = "p11"
+            install_type = "dnf"
+            branch = "fedora"
 
         if install_type == "flatpak":
             source = {
@@ -410,18 +409,10 @@ class AppsPage(Gtk.Box):
                 "cmd": ["flatpak", "install", "-y", "flathub", install_id],
                 "check": ["flatpak", install_id],
             }
-        elif install_type == "epm_play":
-            check_type = "which" if install_id.lower() == "occt" else "rpm"
+        elif install_type == "dnf":
             source = {
-                "label": "EPM Play",
-                "cmd": ["epm", "play", install_id],
-                "check": [check_type, install_id],
-            }
-        else:
-            label = branch if branch in ["p11", "Sisyphus"] else "EPM"
-            source = {
-                "label": label,
-                "cmd": ["epm", "-i", "-y", install_id],
+                "label": branch.capitalize() if branch in ["fedora"] else "RPM",
+                "cmd": ["dnf", "install", "-y", install_id],
                 "check": ["rpm", install_id],
             }
 

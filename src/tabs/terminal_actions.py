@@ -62,7 +62,7 @@ alias vmax="sudo sysctl -w vm.max_map_count=2147483642"
 """
 
 _KEYBINDINGS_BASE = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings"
-_ZSH_MARKER = "# === ALT Booster aliases ==="
+_ZSH_MARKER = "# === Fedora Booster aliases ==="
 
 
 def _add_custom_keybinding(index: int) -> None:

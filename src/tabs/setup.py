@@ -109,7 +109,7 @@ class SetupPage(Gtk.Box):
         self._log("✔  Новых обновлений не найдено.\n")
         dialog = Adw.AlertDialog(
             heading="Обновлений не найдено",
-            body="У вас установлена последняя версия ALT Booster.",
+            body="У вас установлена последняя версия Fedora Booster.",
         )
         dialog.add_response("ok", "OK")
         dialog.set_default_response("ok")
@@ -138,7 +138,7 @@ class SetupPage(Gtk.Box):
             return
 
         self._update_group = Adw.PreferencesGroup()
-        self._update_group.set_title("Обновление ALT Booster")
+        self._update_group.set_title("Обновление Fedora Booster")
         self._body.prepend(self._update_group)
 
         is_on_beta = "-" in config.VERSION or config.state_get("update_channel") == "beta"

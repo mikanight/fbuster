@@ -24,14 +24,14 @@ class GlobalSearchItem:
     icon_name: str
     subtitle: str = ""
     keywords: tuple[str, ...] = ()
-    # None — только переключить вкладку; иначе см. разбор в AltBoosterWindow._apply_search_focus
+    # None — только переключить вкладку; иначе см. разбор в FedoraBoosterWindow._apply_search_focus
     focus_spec: str | None = None
 
 
 # Дополнительные строки для подстрочного поиска (латиница + кириллица).
 _TAB_KEYWORDS: dict[str, tuple[str, ...]] = {
     "setup": ("начало", "главная", "домой", "setup"),
-    "apps": ("приложения", "установить", "каталог", "epm", "flatpak", "репозиторий"),
+    "apps": ("приложения", "установить", "каталог", "dnf", "flatpak", "репозиторий"),
     "extensions": ("расширения", "gnome", "shell", "дополнения"),
     "flatpak": (
         "flatpak",
@@ -114,14 +114,12 @@ def tab_items_from_specs(
 
 def _setup_detail_items() -> list[GlobalSearchItem]:
     """Соответствует подпунктам вкладки «Начало» (tabs/setup.py)."""
-    base_kw = ("начало", "настройка", "система", "alt")
+    base_kw = ("начало", "настройка", "система", "fedora")
     specs: list[tuple[str, str, str, str, tuple[str, ...]]] = [
-        ("epm_install", "application-x-addon-symbolic", "Установить EPM", "Начало · Обновление и пакеты",
-         ("eepm", "пакетный менеджер", "epm")),
-        ("epm_update", "software-update-available-symbolic", "Обновить систему (EPM)", "Начало · Обновление и пакеты",
-         ("обновление", "full-upgrade", "apt")),
+        ("system_update", "software-update-available-symbolic", "Обновить систему", "Начало · Обновление и пакеты",
+         ("обновление", "dnf", "upgrade", "distro-sync")),
         ("sudo", "security-high-symbolic", "Включить sudo", "Начало · Система",
-         ("sudowheel", "pkexec", "control", "права", "wheel")),
+         ("pkexec", "права", "wheel")),
         ("gnome_sw", "view-refresh-symbolic", "Автообновление GNOME Software", "Начало · Система",
          ("центр приложений", "фоновая загрузка", "gnome software")),
         ("trim", "media-flash-symbolic", "Автоматический TRIM", "Начало · Система",
@@ -141,7 +139,7 @@ def _setup_detail_items() -> list[GlobalSearchItem]:
         ("sushi", "view-reveal-symbolic", "Предпросмотр (Sushi)", "Начало · Файловый менеджер Nautilus и иконки",
          ("пробел", "preview", "быстрый просмотр")),
         ("f3d", "image-x-generic-symbolic", "3D превью (f3d)", "Начало · Файловый менеджер Nautilus и иконки",
-         ("модель", "3d", "sisyphus")),
+         ("модель", "3d", "f3d")),
         ("kbd_altshift", "input-keyboard-symbolic", "Alt + Shift", "Начало · Раскладка клавиатуры",
          ("раскладка", "переключение", "клавиатура")),
         ("kbd_caps", "input-keyboard-symbolic", "CapsLock", "Начало · Раскладка клавиатуры",

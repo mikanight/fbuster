@@ -81,8 +81,8 @@ class System76SchedulerTweaksSection:
             "назначает nice и I/O-приоритеты по правилам KDL, опционально отслеживает PipeWire.\n\n"
             "Это не sched_ext и не замена ядру: работа поверх стандартного планировщика. "
             "Одновременно с ananicy-cpp не рекомендуется — оба конкурируют за приоритеты процессов.\n\n"
-            "Сборка из GitHub в /usr/local/bin, конфиги в /etc/system76-scheduler; через epm ставятся "
-            "rust, rust-cargo, clang-devel, pipewire-libs-devel и сопутствующие пакеты. Для execsnoop "
+            "Сборка из GitHub в /usr/local/bin, конфиги в /etc/system76-scheduler; через dnf ставятся "
+            "rust, cargo, clang-devel, pipewire-devel и сопутствующие пакеты. Для execsnoop "
             "при сборке/рантайме — bcc-tools (execsnoop-bpfcc), если доступен."
         )
         intro.set_activatable(False)
@@ -105,7 +105,7 @@ class System76SchedulerTweaksSection:
             undo_label="Удалить",
             undo_icon="user-trash-symbolic",
             help_text=(
-                "Клонирует репозиторий pop-os/system76-scheduler, ставит зависимости сборки через epm, "
+                "Клонирует репозиторий pop-os/system76-scheduler, ставит зависимости сборки через dnf, "
                 "cargo build --release, копирует бинарник, config.kdl, профиль pop_os.kdl, политику D-Bus "
                 "и unit com.system76.Scheduler. Может занять несколько минут."
             ),

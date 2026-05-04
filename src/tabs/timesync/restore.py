@@ -451,7 +451,7 @@ class BorgRestoreDialog(Adw.AlertDialog):
         sep.set_margin_top(4)
         box.append(sep)
 
-        self._cb_altbooster = Gtk.CheckButton(label="Настройки ALT Booster")
+        self._cb_altbooster = Gtk.CheckButton(label="Настройки Fedora Booster")
         self._cb_altbooster.set_active(True)
         self._cb_flatpak = Gtk.CheckButton(label="Данные Flatpak")
         self._cb_flatpak.set_active(True)
@@ -597,7 +597,7 @@ class BorgRestoreDialog(Adw.AlertDialog):
             heading="Проверка пользователя",
             body=(
                 "Имя пользователя в архиве совпадает с текущим?\n\n"
-                "Если нет, ALT Booster выполнит безопасную временную распаковку "
+                "Если нет, Fedora Booster выполнит безопасную временную распаковку "
                 "и перенесёт данные в текущий HOME без изменения исходного архива."
             ),
         )

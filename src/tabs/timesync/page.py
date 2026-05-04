@@ -195,7 +195,7 @@ class BorgPage(Gtk.Box):
         about_row = Adw.ActionRow()
         about_row.set_title("Что здесь можно сделать")
         about_row.set_subtitle(
-            "TimeSync — это центр резервного копирования и восстановления в ALT Booster.\n"
+            "TimeSync — это центр резервного копирования и восстановления в Fedora Booster.\n"
             "Здесь вы настраиваете место хранения, создаёте архивы и при необходимости быстро возвращаете систему к рабочему состоянию.\n"
             "Этот режим подходит как для регулярных бэкапов, так и для переноса системы на другой диск."
         )
@@ -756,7 +756,7 @@ class BorgPage(Gtk.Box):
     def _tm_show_exclude_dialog(self, repo_path: str):
         dialog = Adw.AlertDialog(heading="Что включить в бэкап?")
         dialog.set_body(
-            "Базовый бэкап включает: личные файлы из /home, настройки ALT Booster и данные для восстановления.\n"
+            "Базовый бэкап включает: личные файлы из /home, настройки Fedora Booster и данные для восстановления.\n"
             "Далее выберите режим: полный (без исключений) или стандартный (экономный, можно добавить тяжёлые папки ниже)."
         )
         dialog.add_response("cancel", "Отмена")
@@ -1150,7 +1150,7 @@ class BorgPage(Gtk.Box):
 
     def _build_sources_group(self):
         grp_altbooster = Adw.PreferencesGroup()
-        grp_altbooster.set_title("Настройки ALT Booster")
+        grp_altbooster.set_title("Настройки Fedora Booster")
         grp_altbooster.set_description("~/.config/altbooster/ — пресеты и конфигурация")
         self._body.append(grp_altbooster)
 
@@ -1226,7 +1226,7 @@ class BorgPage(Gtk.Box):
         self._row_flatpak_apps.set_subtitle("Для автоматической переустановки после восстановления")
 
         self._dd_flatpak_apps_src = Gtk.DropDown(
-            model=Gtk.StringList.new(["Установленные в системе", "Список ALT Booster"]),
+            model=Gtk.StringList.new(["Установленные в системе", "Список Fedora Booster"]),
             valign=Gtk.Align.CENTER,
         )
         self._dd_flatpak_apps_src.set_selected(config.state_get("borg_src_flatpak_apps_source", 0))

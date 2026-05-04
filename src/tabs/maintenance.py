@@ -293,7 +293,7 @@ class FstabRow(Adw.ExpanderRow):
         fstab_append = " ".join(shlex.quote(e["line"]) for e in new_entries)
         script_fstab = (
             f"mkdir -p {mounts_args} && "
-            f"printf '\\n# Добавлено ALT Booster\\n' >> /etc/fstab && "
+            f"printf '\\n# Добавлено Fedora Booster\\n' >> /etc/fstab && "
             f"printf '%s\\n' {fstab_append} >> /etc/fstab"
         )
 

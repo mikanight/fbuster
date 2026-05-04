@@ -21,7 +21,7 @@ from core import backend
 from core import config
 from core.checks import invalidate_app_detection_caches
 
-_ALT_ZERO_GUIDE_URL = "https://plafon.gitbook.io/alt-zero"
+_FEDORA_BOOSTER_GUIDE_URL = "https://fedoraproject.org/wiki/Fedora_Booster"
 
 # borg create --progress: "2.88 GB O 1.70 GB C 1.60 GB D 14576 N path/to/file"
 _BORG_CREATE_PROGRESS_RE = re.compile(
@@ -41,7 +41,7 @@ from tabs.flatpak import FlatpakPage
 from tabs.timesync import BorgPage
 
 
-class AltBoosterWindow(Adw.ApplicationWindow):
+class FedoraBoosterWindow(Adw.ApplicationWindow):
     _MAIN_TABS = [
         ("setup",       "Начало",          "go-home-symbolic",             SetupPage),
         ("apps",        "Приложения",      "grid-large-symbolic",          AppsPage),
@@ -60,8 +60,8 @@ class AltBoosterWindow(Adw.ApplicationWindow):
         super().__init__(**kwargs)
 
         icon_theme = "Adwaita"
-        if not os.path.exists("/usr/share/icons/Adwaita") and os.path.exists("/usr/share/icons/alt-workstation"):
-            icon_theme = "alt-workstation"
+        if not os.path.exists("/usr/share/icons/Adwaita"):
+            icon_theme = "Adwaita"
         Gtk.Settings.get_default().set_property("gtk-icon-theme-name", icon_theme)
 
         _icons_base = Path(__file__).parent.parent.parent / "icons"
@@ -107,7 +107,7 @@ class AltBoosterWindow(Adw.ApplicationWindow):
         self._log_queue = queue.SimpleQueue()
         self._log_widget = self._build_log_panel()
 
-        self.set_title("ALT Booster")
+        self.set_title("Fedora Booster")
         settings = self._load_settings()
 
         self._log_file = config.CONFIG_DIR / "altbooster.log"
@@ -233,7 +233,7 @@ class AltBoosterWindow(Adw.ApplicationWindow):
         self._stack = Adw.ViewStack()
 
         self._window_title = Adw.WindowTitle()
-        self._window_title.set_title("ALT Booster")
+        self._window_title.set_title("Fedora Booster")
         header.set_title_widget(self._window_title)
 
         menu = Gio.Menu()
@@ -581,7 +581,7 @@ class AltBoosterWindow(Adw.ApplicationWindow):
         if row is None:
             return
         try:
-            Gio.AppInfo.launch_default_for_uri(_ALT_ZERO_GUIDE_URL, None)
+            Gio.AppInfo.launch_default_for_uri(_FEDORA_BOOSTER_GUIDE_URL, None)
         except GLib.Error:
             pass
 
@@ -926,7 +926,7 @@ class AltBoosterWindow(Adw.ApplicationWindow):
         self.present()
         self._maint.set_sensitive_all(True)
         self._maint.refresh_checks()
-        self._log("👋 Добро пожаловать в ALT Booster. С чего начнём?\n")
+        self._log("👋 Добро пожаловать в Fedora Booster. С чего начнём?\n")
         self._hide_op_card_if_idle()
         if config.INITIAL_TAB and config.INITIAL_TAB in self._pages:
             GLib.idle_add(self._stack.set_visible_child_name, config.INITIAL_TAB)
@@ -1080,7 +1080,7 @@ class AltBoosterWindow(Adw.ApplicationWindow):
     <property name="modal">1</property>
     <child>
       <object class="GtkShortcutsSection">
-        <property name="title">ALT Booster</property>
+        <property name="title">Fedora Booster</property>
         <property name="section-name">general</property>
         <child>
           <object class="GtkShortcutsGroup">
@@ -1114,13 +1114,13 @@ class AltBoosterWindow(Adw.ApplicationWindow):
 
     def _show_about(self, *_):
         d = Adw.AboutDialog()
-        d.set_application_name("ALT Booster")
+        d.set_application_name("Fedora Booster")
         d.set_application_icon("altbooster")
         d.set_developer_name("plafonlinux")
         d.set_version(config.VERSION)
         d.set_issue_url("https://github.com/plafonlinux/altbooster/issues")
         d.set_support_url("https://plafon.gitbook.io/alt-zero")
-        d.set_comments("ALT Booster — утилита-компаньон для настройки ALT Рабочая станция (GNOME)")
+        d.set_comments("Fedora Booster — утилита-компаньон для настройки Fedora Workstation (GNOME)")
         d.set_license_type(Gtk.License.MIT_X11)
         d.set_developers(
             [
