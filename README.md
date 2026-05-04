@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="icons/altbooster.png" width="120" alt="Fedora Booster Logo"/>
-
 # Fedora Booster
 
 Утилита для тонкой настройки и обслуживания Fedora Linux. Форк [ALT Booster](https://github.com/plafonlinux/altbooster), адаптированный под Fedora Workstation (GNOME). Интерфейс на GTK4/Adwaita.
@@ -12,11 +10,6 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-yellow)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-345%20passed-brightgreen)]()
 
-</div>
-
-<div align="center">
-  <img src="previewb.png" alt="Интерфейс Fedora Booster" width="800">
-</div>
 
 ---
 
