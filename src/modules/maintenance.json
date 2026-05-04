@@ -6,11 +6,12 @@
     {
       "id": "apt",
       "icon": "user-trash-symbolic",
-      "label": "Очистка APT",
-      "desc": "apt-get clean — удаляет кэш пакетов",
+      "label": "Очистка DNF",
+      "desc": "dnf clean all — удаляет кэш пакетов",
       "cmd": [
-        "apt-get",
-        "clean"
+        "dnf",
+        "clean",
+        "all"
       ]
     },
     {

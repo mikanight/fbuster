@@ -26,8 +26,8 @@ _POSTINSTALL_CMD = [
     "rm -rf /opt/resolve/libs/libgio-2.0.so* && "
     "rm -rf /opt/resolve/libs/libgmodule-2.0.so*",
 ]
-_ROCM_PKGS = ["apt-get", "install", "-y", "libGLU", "ffmpeg",
-              "rocm-opencl-runtime", "hip-runtime-amd", "clinfo"]
+_ROCM_PKGS = ["dnf", "install", "-y", "mesa-libGLU", "ffmpeg-free",
+              "rocm-opencl", "rocm-hip", "clinfo"]
 def _build_fairlight_cmd() -> list:
     user_home = os.path.expanduser("~")
     asound_content = (
@@ -38,7 +38,7 @@ def _build_fairlight_cmd() -> list:
     )
     return [
         "bash", "-c",
-        f"apt-get install -y alsa-plugins-pulse && "
+        f"dnf install -y alsa-plugins-pulseaudio && "
         f"printf '{asound_content}' > /etc/asound.conf && "
         f"printf '{asound_content}' > '{user_home}/.asoundrc'",
     ]
@@ -132,7 +132,7 @@ class DaVinciPage(Gtk.Box):
         body.append(ag)
         r2 = Adw.ActionRow()
         r2.set_title("Поддержка AMD ROCm")
-        r2.set_subtitle("libGLU  ffmpeg  rocm-opencl-runtime  hip-runtime-amd  clinfo")
+        r2.set_subtitle("mesa-libGLU  ffmpeg-free  rocm-opencl  rocm-hip  clinfo")
         r2.add_prefix(make_icon("video-display-symbolic"))
         self._amd_st = make_status_icon()
         self._amd_btn = make_button("Установить")
@@ -146,7 +146,7 @@ class DaVinciPage(Gtk.Box):
             threading.Thread(
                 target=lambda: GLib.idle_add(
                     self._set_amd_ui,
-                    subprocess.run(["rpm", "-q", "rocm-opencl-runtime"], capture_output=True).returncode == 0,
+                    subprocess.run(["rpm", "-q", "rocm-opencl"], capture_output=True).returncode == 0,
                 ),
                 daemon=True,
             ).start()
@@ -491,18 +491,18 @@ class DaVinciPage(Gtk.Box):
 
 
     def run_ready_preset(self, btn):
-        amd_ok = subprocess.run(["rpm", "-q", "rocm-opencl-runtime"],
+        amd_ok = subprocess.run(["rpm", "-q", "rocm-opencl"],
                                  capture_output=True).returncode == 0
         aac_ok = backend.is_aac_installed()
         fl_ok  = backend.is_fairlight_installed()
 
         lines = ["1. PostInstall — удаление конфликтующих библиотек glib/gio/gmodule"]
         if not amd_ok:
-            lines.append("2. AMD ROCm — libGLU, ffmpeg, rocm-opencl-runtime")
+            lines.append("2. AMD ROCm — mesa-libGLU, ffmpeg-free, rocm-opencl")
         if not aac_ok:
             lines.append("3. AAC кодек — плагин для экспорта AAC аудио")
         if not fl_ok:
-            lines.append("4. Fairlight — alsa-plugins-pulse")
+            lines.append("4. Fairlight — alsa-plugins-pulseaudio")
 
         suffix = (
             "\n\nВсе дополнительные компоненты уже установлены."
@@ -531,7 +531,7 @@ class DaVinciPage(Gtk.Box):
         steps = [
             ("PostInstall", _POSTINSTALL_CMD, "privileged", None),
             ("AMD ROCm", _ROCM_PKGS, "privileged",
-             lambda: subprocess.run(["rpm", "-q", "rocm-opencl-runtime"], capture_output=True).returncode == 0),
+             lambda: subprocess.run(["rpm", "-q", "rocm-opencl"], capture_output=True).returncode == 0),
             ("Fairlight", _build_fairlight_cmd(), "privileged",
              backend.is_fairlight_installed),
             ("AAC", None, "aac", backend.is_aac_installed),
@@ -565,7 +565,7 @@ class DaVinciPage(Gtk.Box):
                 threading.Thread(
                     target=lambda: GLib.idle_add(
                         self._set_amd_ui,
-                        subprocess.run(["rpm", "-q", "rocm-opencl-runtime"], capture_output=True).returncode == 0,
+                        subprocess.run(["rpm", "-q", "rocm-opencl"], capture_output=True).returncode == 0,
                     ),
                     daemon=True,
                 ).start()

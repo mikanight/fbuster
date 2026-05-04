@@ -192,21 +192,21 @@ class System76SchedulerTweaksSection:
 
         def _thread():
             self._log(
-                "▶  Зависимости сборки (ALT: rust, rust-cargo, clang-devel, pipewire-libs-devel…)…\n"
+                "▶  Зависимости сборки (Fedora: rust, cargo, clang-devel, pipewire-devel…)…\n"
             )
             backend.run_privileged_sync(
                 [
-                    "epm",
+                    "dnf",
                     "install",
                     "-y",
                     "rust",
-                    "rust-cargo",
+                    "cargo",
                     "git",
                     "clang",
                     "gcc",
                     "make",
                     "pkg-config",
-                    "pipewire-libs-devel",
+                    "pipewire-devel",
                     "clang-devel",
                 ],
                 self._log,

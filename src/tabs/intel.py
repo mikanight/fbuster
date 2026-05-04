@@ -199,9 +199,9 @@ class ScxMeteorTweaksSection:
                 GLib.idle_add(_fail)
                 return
 
-            self._log("▶  Установка зависимостей (rust, rust-cargo, git, clang, llvm)...\n")
+            self._log("▶  Установка зависимостей (rust, cargo, git, clang, llvm)...\n")
             backend.run_privileged_sync(
-                ["epm", "install", "-y", "rust", "rust-cargo", "git", "clang", "llvm"],
+                ["dnf", "install", "-y", "rust", "cargo", "git", "clang", "llvm"],
                 self._log,
             )
 

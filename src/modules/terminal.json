@@ -12,12 +12,12 @@
           "id": "ptyxis_install",
           "type": "command_row",
           "title": "Установить Ptyxis",
-          "subtitle": "epmi ptyxis + удалить gnome-terminal",
+          "subtitle": "dnf install ptyxis + удалить gnome-terminal",
           "icon": "utilities-terminal-symbolic",
           "button_label": "Установить",
           "button_done_label": "Установлен",
           "check": { "type": "which", "value": "ptyxis" },
-          "action": { "type": "privileged", "cmd": ["bash", "-c", "apt-get remove -y gnome-terminal 2>/dev/null || true && apt-get install -y ptyxis"] }
+          "action": { "type": "privileged", "cmd": ["bash", "-c", "dnf remove -y gnome-terminal 2>/dev/null || true && dnf install -y ptyxis"] }
         },
         {
           "id": "ptyxis_default",
@@ -71,12 +71,12 @@
           "id": "zsh_install",
           "type": "command_row",
           "title": "Установить git и zsh",
-          "subtitle": "apt-get install -y git zsh",
+          "subtitle": "dnf install -y git zsh",
           "icon": "utilities-terminal-symbolic",
           "button_label": "Установить",
           "button_done_label": "Установлен",
           "check": { "type": "which", "value": "zsh" },
-          "action": { "type": "privileged", "cmd": ["apt-get", "install", "-y", "git", "zsh"] }
+          "action": { "type": "privileged", "cmd": ["dnf", "install", "-y", "git", "zsh"] }
         },
         {
           "id": "zplug_install",
@@ -111,23 +111,23 @@
           "id": "fastfetch_install",
           "type": "command_row",
           "title": "Установить Fastfetch",
-          "subtitle": "epmi fastfetch",
+          "subtitle": "dnf install fastfetch",
           "icon": "dialog-information-symbolic",
           "button_label": "Установить",
           "button_done_label": "Установлен",
           "check": { "type": "which", "value": "fastfetch" },
-          "action": { "type": "epm", "cmd": ["epm", "-i", "fastfetch"] }
+          "action": { "type": "privileged", "cmd": ["dnf", "install", "-y", "fastfetch"] }
         },
         {
           "id": "firacode_install",
           "type": "command_row",
           "title": "Шрифт FiraCode Nerd Font",
-          "subtitle": "epmi fonts-ttf-fira-code-nerd",
+          "subtitle": "dnf install fira-code-fonts",
           "icon": "font-x-generic-symbolic",
           "button_label": "Установить",
           "button_done_label": "Установлен",
-          "check": { "type": "rpm", "value": "fonts-ttf-fira-code-nerd" },
-          "action": { "type": "epm", "cmd": ["epm", "-i", "fonts-ttf-fira-code-nerd"] }
+          "check": { "type": "rpm", "value": "fira-code-fonts" },
+          "action": { "type": "privileged", "cmd": ["dnf", "install", "-y", "fira-code-fonts"] }
         },
         {
           "id": "font_apply",
@@ -163,7 +163,7 @@
           "id": "aliases_add",
           "type": "command_row",
           "title": "Добавить алиасы в .zshrc",
-          "subtitle": "Алиасы для epm, flatpak, timeshift, DaVinci и др.",
+          "subtitle": "Алиасы для dnf, flatpak, timeshift, DaVinci и др.",
           "icon": "text-editor-symbolic",
           "button_label": "Добавить",
           "button_done_label": "Добавлены",

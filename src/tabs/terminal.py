@@ -35,13 +35,8 @@ alias cpuc="lscpu"
 alias w="wine --version"
 alias pc="inxi -Ixxx"
 alias net="inxi -Nxxx"
-alias ep="eepm-help"
-alias epm-help="eepm-help"
-alias eph="eepm-help"
-alias find="epmqp"
-alias poisk="epms"
-alias up="epm update && epm full-upgrade && flatpak update --noninteractive -y"
-alias cc="sudo apt-get clean && sudo apt-get autoclean && sudo apt-get check && sudo remove-old-kernels -a && flatpak uninstall --unused -y && sudo journalctl --vacuum-time=1weeks"
+alias up="sudo dnf upgrade -y && flatpak update --noninteractive -y"
+alias cc="sudo dnf clean all && flatpak uninstall --unused -y && sudo journalctl --vacuum-time=1weeks"
 alias c="clear"
 alias son="sudo systemctl suspend"
 alias reboot="systemctl reboot"
@@ -243,7 +238,7 @@ class TerminalPage(Gtk.Box):
 
         self._row_ptyxis_install = SettingRow(
             "utilities-terminal-symbolic", "Установить Ptyxis",
-            "epmi ptyxis + удалить gnome-terminal", "Установить",
+            "dnf install ptyxis + удалить gnome-terminal", "Установить",
             self._on_install_ptyxis,
             lambda: backend.check_app_installed({"check": ["which", "ptyxis"]}),
             "term_ptyxis_install", "Установлен",
@@ -269,15 +264,15 @@ class TerminalPage(Gtk.Box):
         def _done(ok):
             row.set_done(ok)
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
-        backend.run_privileged(["bash", "-c", "apt-get remove -y gnome-terminal 2>/dev/null || true"], self._log,
-            lambda ok: backend.run_epm(["epm", "-i", "ptyxis"], self._log, _done))
+        backend.run_privileged(["bash", "-c", "dnf remove -y gnome-terminal 2>/dev/null || true"], self._log,
+            lambda ok: backend.run_privileged(["dnf", "install", "-y", "ptyxis"], self._log, _done))
 
     def _on_remove_ptyxis(self, row):
         row.set_working()
         self._log("\n▶  Удаление Ptyxis...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Удаление Ptyxis...")
-        backend.run_privileged(["apt-get", "remove", "-y", "ptyxis"], self._log, 
+        backend.run_privileged(["dnf", "remove", "-y", "ptyxis"], self._log, 
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _check_ptyxis_default(self):
@@ -417,7 +412,7 @@ class TerminalPage(Gtk.Box):
 
         self._row_zsh_install = SettingRow(
             "utilities-terminal-symbolic", "Установить git и zsh",
-            "apt-get install -y git zsh", "Установить",
+            "dnf install -y git zsh", "Установить",
             self._on_install_zsh,
             lambda: backend.check_app_installed({"check": ["which", "zsh"]}),
             "term_zsh_install", "Установлен",
@@ -450,7 +445,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Установка git и zsh...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Установка ZSH...")
-        backend.run_privileged(["apt-get", "install", "-y", "git", "zsh"], self._log, 
+        backend.run_privileged(["dnf", "install", "-y", "git", "zsh"], self._log, 
             lambda ok: (row.set_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_remove_zsh(self, row):
@@ -458,7 +453,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Удаление zsh...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Удаление ZSH...")
-        backend.run_privileged(["apt-get", "remove", "-y", "zsh"], self._log, 
+        backend.run_privileged(["dnf", "remove", "-y", "zsh"], self._log, 
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_install_zplug(self, row):
@@ -516,7 +511,7 @@ class TerminalPage(Gtk.Box):
 
         self._row_fastfetch_install = SettingRow(
             "dialog-information-symbolic", "Установить Fastfetch",
-            "epmi fastfetch", "Установить",
+            "dnf install fastfetch", "Установить",
             self._on_install_fastfetch,
             lambda: backend.check_app_installed({"check": ["which", "fastfetch"]}),
             "term_ff_install", "Установлен",
@@ -526,9 +521,9 @@ class TerminalPage(Gtk.Box):
 
         self._row_font_install = SettingRow(
             "font-x-generic-symbolic", "Шрифт FiraCode Nerd Font",
-            "epmi fonts-ttf-fira-code-nerd", "Установить",
+            "dnf install fira-code-fonts", "Установить",
             self._on_install_font,
-            lambda: backend.check_app_installed({"check": ["rpm", "fonts-ttf-fira-code-nerd"]}),
+            lambda: backend.check_app_installed({"check": ["rpm", "fira-code-fonts"]}),
             "term_font_install", "Установлен",
             self._on_remove_font, "Удалить", "user-trash-symbolic"
         )
@@ -559,7 +554,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Установка Fastfetch...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Установка Fastfetch...")
-        backend.run_epm(["epm", "-i", "fastfetch"], self._log, 
+        backend.run_privileged(["dnf", "install", "-y", "fastfetch"], self._log, 
             lambda ok: (row.set_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_remove_fastfetch(self, row):
@@ -567,7 +562,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Удаление Fastfetch...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Удаление Fastfetch...")
-        backend.run_epm(["epm", "-e", "fastfetch"], self._log, 
+        backend.run_privileged(["dnf", "remove", "-y", "fastfetch"], self._log, 
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_install_font(self, row):
@@ -575,7 +570,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Установка шрифта...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Установка шрифта...")
-        backend.run_epm(["epm", "-i", "fonts-ttf-fira-code-nerd"], self._log, 
+        backend.run_privileged(["dnf", "install", "-y", "fira-code-fonts"], self._log, 
             lambda ok: (row.set_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_remove_font(self, row):
@@ -583,7 +578,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Удаление шрифта...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Удаление шрифта...")
-        backend.run_epm(["epm", "-e", "fonts-ttf-fira-code-nerd"], self._log, 
+        backend.run_privileged(["dnf", "remove", "-y", "fira-code-fonts"], self._log, 
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _check_ptyxis_font(self):
@@ -654,7 +649,7 @@ class TerminalPage(Gtk.Box):
 
         self._row_aliases = SettingRow(
             "text-editor-symbolic", "Добавить алиасы в .zshrc",
-            "Алиасы для epm, flatpak, timeshift, DaVinci и др.", "Добавить",
+            "Алиасы для dnf, flatpak, timeshift, DaVinci и др.", "Добавить",
             self._on_add_aliases,
             self._check_aliases,
             "term_aliases", "Добавлены",
@@ -808,7 +803,7 @@ class TerminalPage(Gtk.Box):
             return ok
 
         run_step(self._row_ptyxis_install, "Установка Ptyxis", 
-            lambda: backend.run_privileged_sync(["bash", "-c", "apt-get remove -y gnome-terminal 2>/dev/null || true && apt-get install -y ptyxis"], self._log))
+            lambda: backend.run_privileged_sync(["bash", "-c", "dnf remove -y gnome-terminal 2>/dev/null || true && dnf install -y ptyxis"], self._log))
         
         run_step(self._row_ptyxis_default, "Ptyxis по умолчанию",
             lambda: subprocess.run(["xdg-mime", "default", "org.gnome.Ptyxis.desktop", "x-scheme-handler/terminal"]).returncode == 0)
@@ -833,7 +828,7 @@ class TerminalPage(Gtk.Box):
             lambda: _sync_shortcut("custom1", "Terminal Super", "ptyxis --new-window", "<Super>Return"))
 
         run_step(self._row_zsh_install, "Установка ZSH",
-            lambda: backend.run_privileged_sync(["apt-get", "install", "-y", "git", "zsh"], self._log))
+            lambda: backend.run_privileged_sync(["dnf", "install", "-y", "git", "zsh"], self._log))
         
         run_step(self._row_zplug_install, "Установка zplug",
             lambda: subprocess.run(["git", "clone", "https://github.com/zplug/zplug", os.path.expanduser("~/.zplug")], capture_output=True).returncode == 0)
@@ -842,10 +837,10 @@ class TerminalPage(Gtk.Box):
             lambda: backend.run_privileged_sync(["chsh", "-s", "/bin/zsh", os.environ.get("USER")], self._log))
 
         run_step(self._row_fastfetch_install, "Установка Fastfetch",
-            lambda: backend.run_epm_sync(["epm", "-i", "fastfetch"], self._log))
+            lambda: backend.run_privileged_sync(["dnf", "install", "-y", "fastfetch"], self._log))
         
         run_step(self._row_font_install, "Установка шрифта",
-            lambda: backend.run_epm_sync(["epm", "-i", "fonts-ttf-fira-code-nerd"], self._log))
+            lambda: backend.run_privileged_sync(["dnf", "install", "-y", "fira-code-fonts"], self._log))
         
         run_step(self._row_font_apply, "Применение шрифта",
             lambda: subprocess.run(["dconf", "write", "/org/gnome/Ptyxis/Profiles/default/font-name", "'FiraCode Nerd Font Regular 14'"]).returncode == 0)

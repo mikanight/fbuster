@@ -2000,8 +2000,8 @@ class BorgPage(Gtk.Box):
         if hasattr(win, "start_progress"):
             win.start_progress("Установка borg...")
         self._log("\n▶  Установка borg...\n")
-        backend.run_epm(
-            ["epm", "install", "-y", "borg"],
+        backend.run_privileged(
+            ["dnf", "install", "-y", "borgbackup"],
             self._log,
             lambda ok: (
                 self._log("✔ Borg установлен\n" if ok else "✘ Ошибка установки\n"),

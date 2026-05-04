@@ -424,7 +424,7 @@ class FlatpakPage(Gtk.Box):
                     GLib.idle_add(win.stop_progress, False)
                 return
             backend.run_privileged(
-                ["apt-get", "install", "-y", "flatpak-repo-flathub"],
+                ["flatpak", "remote-add", "--if-not-exists", "flathub", "https://flathub.org/repo/flathub.flatpakrepo"],
                 self._log,
                 lambda ok2: (
                     GLib.idle_add(self._log, "✔  Flathub готов!\n" if ok2 else "✘  Ошибка\n"),
@@ -433,7 +433,7 @@ class FlatpakPage(Gtk.Box):
                 ),
             )
 
-        backend.run_privileged(["apt-get", "install", "-y", "flatpak"], self._log, _step2)
+        backend.run_privileged(["dnf", "install", "-y", "flatpak"], self._log, _step2)
 
 
     def _make_app_row(self, app: FlatpakApp) -> Adw.ActionRow:
@@ -682,12 +682,12 @@ class FlatpakPage(Gtk.Box):
                 row.set_done(False)
                 return
             backend.run_privileged(
-                ["apt-get", "install", "-y", "flatpak-repo-flathub"],
+                ["flatpak", "remote-add", "--if-not-exists", "flathub", "https://flathub.org/repo/flathub.flatpakrepo"],
                 self._log,
                 _after_flathub,
             )
 
-        backend.run_privileged(["apt-get", "install", "-y", "flatpak"], self._log, step2)
+        backend.run_privileged(["dnf", "install", "-y", "flatpak"], self._log, step2)
 
     def _ask_restart(self):
         dialog = Adw.AlertDialog(
@@ -716,7 +716,7 @@ class FlatpakPage(Gtk.Box):
         if hasattr(win, "start_progress"):
             win.start_progress("Удаление Flatpak...")
         backend.run_privileged(
-            ["apt-get", "remove", "-y", "flatpak", "flatpak-repo-flathub"],
+            ["dnf", "remove", "-y", "flatpak"],
             self._log,
             lambda ok: (
                 row.set_undo_done(ok),

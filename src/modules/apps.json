@@ -92,7 +92,7 @@
             {
               "label": "EPM",
               "cmd": [
-                "epm",
+                "dnf",
                 "-i",
                 "gnome-connections"
               ],
@@ -125,7 +125,7 @@
             {
               "label": "EPM",
               "cmd": [
-                "epm",
+                "dnf",
                 "-i",
                 "remmina"
               ],
@@ -143,7 +143,7 @@
           "source": {
             "label": "EPM",
             "cmd": [
-              "epm",
+              "dnf",
               "-i",
               "freerdp"
             ],
@@ -200,7 +200,7 @@
             {
               "label": "EPM",
               "cmd": [
-                "epm",
+                "dnf",
                 "-i",
                 "-y",
                 "firefox"
@@ -253,7 +253,7 @@
             {
               "label": "EPM play",
               "cmd": [
-                "epm",
+                "dnf",
                 "play",
                 "yandex-browser"
               ],
@@ -265,7 +265,7 @@
             {
               "label": "EPM",
               "cmd": [
-                "epm",
+                "dnf",
                 "-i",
                 "-y",
                 "yandex-browser-stable"
@@ -330,7 +330,7 @@
             "cmd": [
               "bash",
               "-c",
-              "apt-get install -y cups-browsed avahi-daemon libnss-mdns sane sane-airscan && systemctl enable --now cups-browsed && systemctl enable --now avahi-daemon"
+              "dnf install -y cups-browsed avahi-daemon libnss-mdns sane sane-airscan && systemctl enable --now cups-browsed && systemctl enable --now avahi-daemon"
             ],
             "check": [
               "rpm",
@@ -384,7 +384,7 @@
             {
               "label": "EPM play",
               "cmd": [
-                "epm",
+                "dnf",
                 "play",
                 "obsidian"
               ],
@@ -476,7 +476,7 @@
             {
               "label": "EPM",
               "cmd": [
-                "epm",
+                "dnf",
                 "-i",
                 "kdenlive"
               ],
@@ -552,7 +552,7 @@
             {
               "label": "EPM",
               "cmd": [
-                "epm",
+                "dnf",
                 "-i",
                 "kitsune-adw"
               ],
@@ -610,7 +610,7 @@
             {
               "label": "EPM play",
               "cmd": [
-                "epm",
+                "dnf",
                 "play",
                 "portproton"
               ],
@@ -622,7 +622,7 @@
             {
               "label": "EPM",
               "cmd": [
-                "epm",
+                "dnf",
                 "-i",
                 "portproton"
               ],
@@ -655,7 +655,7 @@
             {
               "label": "EPM play",
               "cmd": [
-                "epm",
+                "dnf",
                 "play",
                 "heroic-games-launcher"
               ],
@@ -765,7 +765,7 @@
             {
               "label": "EPM",
               "cmd": [
-                "epm",
+                "dnf",
                 "-i",
                 "gimp"
               ],
@@ -824,7 +824,7 @@
             {
               "label": "EPM",
               "cmd": [
-                "epm",
+                "dnf",
                 "-i",
                 "darktable"
               ],
@@ -857,7 +857,7 @@
             {
               "label": "EPM",
               "cmd": [
-                "epm",
+                "dnf",
                 "-i",
                 "rawtherapee"
               ],
@@ -895,7 +895,7 @@
             {
               "label": "EPM",
               "cmd": [
-                "epm",
+                "dnf",
                 "-i",
                 "blender"
               ],
@@ -907,7 +907,7 @@
             {
               "label": "EPM Play",
               "cmd": [
-                "epm",
+                "dnf",
                 "play",
                 "blender"
               ],
@@ -945,7 +945,7 @@
           "source": {
             "label": "EPM play",
             "cmd": [
-              "epm",
+              "dnf",
               "play",
               "code"
             ],
@@ -987,7 +987,7 @@
           "source": {
             "label": "EPM",
             "cmd": [
-              "epm",
+              "dnf",
               "-i",
               "alacarte"
             ],
@@ -1086,7 +1086,7 @@
           "source": {
             "label": "EPM",
             "cmd": [
-              "epm",
+              "dnf",
               "-i",
               "solaar"
             ],
@@ -1103,7 +1103,7 @@
           "source": {
             "label": "EPM",
             "cmd": [
-              "epm",
+              "dnf",
               "-i",
               "piper"
             ],
@@ -1135,7 +1135,7 @@
             {
               "label": "EPM play",
               "cmd": [
-                "epm",
+                "dnf",
                 "play",
                 "localsend"
               ],
@@ -1174,7 +1174,7 @@
             "cmd": [
               "bash",
               "-c",
-              "set -e; REAL_USER=$SUDO_USER; HOME_DIR=$(getent passwd $REAL_USER | cut -d: -f6); apt-get install -y python3-module-pip; mkdir -p /etc/modules-load.d; echo i2c-dev > /etc/modules-load.d/i2c-dev.conf; groupadd -f i2c; chown :i2c /dev/i2c-* 2>/dev/null || true; usermod -aG i2c $REAL_USER; echo 'KERNEL==\"i2c-[0-9]*\", GROUP=\"i2c\"' > /etc/udev/rules.d/10-i2c.rules; udevadm control --reload-rules; udevadm trigger; sudo -u $REAL_USER bash -c   'cd /tmp && rm -rf Monic   && git clone https://github.com/toxblh/Monic.git   && cd Monic && ./install.sh'; sudo -u $REAL_USER bash $HOME_DIR/.local/share/monitor-control/run_monitor_control.sh"
+              "set -e; REAL_USER=$SUDO_USER; HOME_DIR=$(getent passwd $REAL_USER | cut -d: -f6); dnf install -y python3-pip; mkdir -p /etc/modules-load.d; echo i2c-dev > /etc/modules-load.d/i2c-dev.conf; groupadd -f i2c; chown :i2c /dev/i2c-* 2>/dev/null || true; usermod -aG i2c $REAL_USER; echo 'KERNEL==\"i2c-[0-9]*\", GROUP=\"i2c\"' > /etc/udev/rules.d/10-i2c.rules; udevadm control --reload-rules; udevadm trigger; sudo -u $REAL_USER bash -c   'cd /tmp && rm -rf Monic   && git clone https://github.com/toxblh/Monic.git   && cd Monic && ./install.sh'; sudo -u $REAL_USER bash $HOME_DIR/.local/share/monitor-control/run_monitor_control.sh"
             ],
             "check": [
               "path",
@@ -1195,7 +1195,7 @@
           "source": {
             "label": "EPM",
             "cmd": [
-              "epm",
+              "dnf",
               "-i",
               "-y",
               "v2ray"
@@ -1213,7 +1213,7 @@
           "source": {
             "label": "EPM",
             "cmd": [
-              "epm",
+              "dnf",
               "-i",
               "-y",
               "xray-core"
@@ -1231,7 +1231,7 @@
           "source": {
             "label": "EPM Play",
             "cmd": [
-              "epm",
+              "dnf",
               "play",
               "v2rayn"
             ],
@@ -1248,7 +1248,7 @@
           "source": {
             "label": "EPM Play",
             "cmd": [
-              "epm",
+              "dnf",
               "play",
               "nekoray"
             ],
@@ -1265,7 +1265,7 @@
           "source": {
             "label": "EPM Play",
             "cmd": [
-              "epm",
+              "dnf",
               "play",
               "hiddify"
             ],
@@ -1306,7 +1306,7 @@
             {
               "label": "EPM play",
               "cmd": [
-                "epm",
+                "dnf",
                 "play",
                 "furmark"
               ],
@@ -1324,7 +1324,7 @@
           "source": {
             "label": "EPM Play",
             "cmd": [
-              "epm",
+              "dnf",
               "play",
               "occt"
             ],
@@ -1361,7 +1361,7 @@
             {
               "label": "EPM Play",
               "cmd": [
-                "epm",
+                "dnf",
                 "play",
                 "unigine-valley"
               ],
@@ -1380,7 +1380,7 @@
             {
               "label": "EPM Play",
               "cmd": [
-                "epm",
+                "dnf",
                 "play",
                 "unigine-superposition"
               ],
@@ -1399,7 +1399,7 @@
             {
               "label": "EPM Play",
               "cmd": [
-                "epm",
+                "dnf",
                 "play",
                 "unigine-heaven"
               ],
