@@ -361,19 +361,17 @@ class SetupPage(Gtk.Box):
         body.append(sys_group)
 
         sys_rows = [
-            ("security-high-symbolic",             "Включить sudo",               "Добавляет пользователя в группу wheel",        "Активировать", self._on_sudo,           None,                                  "setting_sudo", "Активировано", self._on_sudo_undo, "Отключить"),
             ("view-refresh-symbolic",    "Автообновление GNOME Software",      "Отключаем фоновую загрузку GNOME Software", "Отключить",    self._on_gnome_software_updates, lambda: backend.gsettings_get("org.gnome.software", "download-updates") == "false", "setting_gnome_software_updates", "Выключено", self._on_gnome_software_updates_undo, "Включить"),
             ("media-flash-symbolic",               "Автоматический TRIM",         "Включает еженедельную очистку блоков SSD",      "Включить",     self._on_trim_timer,           backend.is_fstrim_enabled,             "setting_trim_auto", "Активировано", self._on_trim_timer_undo, "Отключить"),
             ("document-open-recent-symbolic",      "Лимиты журналов",             "SystemMaxUse=100M и сжатие в journald.conf",    "Настроить",    self._on_journal_limit,  backend.is_journal_optimized,          "setting_journal_opt", "Активировано", self._on_journal_limit_undo, "Сбросить"),
             ("video-display-symbolic",             "Дробное масштабирование",     "Включает scale-monitor-framebuffer",            "Включить",     self._on_scale,          backend.is_fractional_scaling_enabled, "setting_scale", "Активировано", self._on_scale_undo, "Отключить"),
         ]
 
-        self._r_sudo, self._r_gnome_sw, self._r_trim, self._r_journal, self._r_scale = [
+        self._r_gnome_sw, self._r_trim, self._r_journal, self._r_scale = [
             SettingRow(*r) for r in sys_rows
         ]
 
         for r in (
-            self._r_sudo,
             self._r_gnome_sw,
             self._r_trim,
             self._r_journal,
@@ -399,16 +397,15 @@ class SetupPage(Gtk.Box):
         filemanager_rows = [
             ("folder-symbolic",    "Настройка Nautilus",    "Сортировка папок первыми, создание ссылок, удаление",  "Включить",  self._on_nautilus,              _check_nautilus,                        "setting_nautilus", "Активировано", self._on_nautilus_undo, "Отключить"),
             ("media-flash-symbolic", "Кэш копирования",      "vm.dirty_bytes/background_bytes = 64 MB (ускоряет копирование)", "Включить",  self._on_vm_dirty,             backend.is_vm_dirty_optimized,           "setting_vm_dirty", "Активировано", self._on_vm_dirty_undo, "Отключить"),
-            ("system-run-symbolic",  "Nautilus Admin",        "Пункт «Открыть от root» в контекстном меню Nautilus",   "Установить", self._on_install_nautilus_admin, lambda: backend.check_app_installed({"check": ["rpm", "nautilus-admin-gtk4"]}), "setting_nautilus_admin", "Установлено", self._on_remove_nautilus_admin, "Удалить"),
             ("folder-symbolic",      "Sushi — предпросмотр",  "Быстрый предпросмотр файлов через пробел в Nautilus",     "Установить", self._on_install_sushi,         lambda: backend.check_app_installed({"check": ["rpm", "sushi"]}), "setting_sushi", "Установлено", self._on_remove_sushi, "Удалить"),
             ("folder-symbolic",      "f3d — 3D превью",       "Предпросмотр 3D-моделей прямо в Nautilus",                "Установить", self._on_install_f3d,           lambda: backend.check_app_installed({"check": ["rpm", "f3d"]}), "setting_f3d", "Установлено", self._on_remove_f3d, "Удалить"),
         ]
 
-        self._r_naut, self._r_dirty, self._r_naut_admin, self._r_sushi, self._r_f3d = [
+        self._r_naut, self._r_dirty, self._r_sushi, self._r_f3d = [
             SettingRow(*r) for r in filemanager_rows
         ]
 
-        for r in (self._papirus_row, self._r_naut, self._r_dirty, self._r_naut_admin, self._r_sushi, self._r_f3d):
+        for r in (self._papirus_row, self._r_naut, self._r_dirty, self._r_sushi, self._r_f3d):
             group.add(r)
 
     def _on_nautilus(self, row):
@@ -457,33 +454,6 @@ class SetupPage(Gtk.Box):
         if hasattr(win, "start_progress"): win.start_progress("Сброс vm.dirty...")
         backend.run_privileged(["rm", "-f", "/etc/sysctl.d/99-altbooster.conf"], self._log,
             lambda ok: (row.set_undo_done(ok), self._log("✔  Настройки сброшены (требуется перезагрузка для эффекта)\n" if ok else "✘  Ошибка\n"), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
-
-    def _on_install_nautilus_admin(self, row):
-        row.set_working()
-        self._log("\n▶  Установка nautilus-admin-gtk4...\n")
-        win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Установка nautilus-admin-gtk4...")
-        def _done(ok):
-            row.set_done(ok)
-            if ok:
-                self._log("✔  Установлено! Перезапускаю Nautilus...\n")
-            else:
-                self._log("✘  Ошибка установки nautilus-admin-gtk4\n")
-            if hasattr(win, "stop_progress"): win.stop_progress(ok)
-            if ok: subprocess.run(["nautilus", "-q"])
-        backend.run_privileged(["dnf", "install", "-y", "nautilus-admin-gtk4"], self._log, _done)
-
-    def _on_remove_nautilus_admin(self, row):
-        row.set_working()
-        self._log("\n▶  Удаление nautilus-admin-gtk4...\n")
-        win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Удаление nautilus-admin-gtk4...")
-        def _done(ok):
-            row.set_undo_done(ok)
-            self._log("✔  nautilus-admin-gtk4 удалён!\n" if ok else "✘  Ошибка удаления\n")
-            if hasattr(win, "stop_progress"): win.stop_progress(ok)
-            if ok: subprocess.run(["nautilus", "-q"])
-        backend.run_privileged(["dnf", "remove", "-y", "nautilus-admin-gtk4"], self._log, _done)
 
     def _on_install_sushi(self, row):
         row.set_working()
@@ -555,27 +525,36 @@ class SetupPage(Gtk.Box):
         self._r_alt = SettingRow(
             "input-keyboard-symbolic", "Alt + Shift",
             "Классическое переключение раскладки", "Включить",
-            self._on_altshift, None, "setting_kbd_altshift", done_label=""
+            self._on_altshift, None, "setting_kbd_altshift", done_label="Активно",
+            on_undo=self._on_altshift_undo, undo_label="Сбросить", undo_icon="edit-undo-symbolic",
         )
         self._r_caps = SettingRow(
             "input-keyboard-symbolic", "CapsLock",
             "Переключение раскладки кнопкой CapsLock", "Включить",
-            self._on_capslock, None, "setting_kbd_capslock", done_label=""
+            self._on_capslock, None, "setting_kbd_capslock", done_label="Активно",
+            on_undo=self._on_capslock_undo, undo_label="Сбросить", undo_icon="edit-undo-symbolic",
         )
         self._r_ctrl = SettingRow(
             "input-keyboard-symbolic", "Ctrl + Shift",
             "Переключение раскладки по Ctrl+Shift", "Включить",
-            self._on_ctrlshift, None, "setting_kbd_ctrlshift", done_label=""
+            self._on_ctrlshift, None, "setting_kbd_ctrlshift", done_label="Активно",
+            on_undo=self._on_ctrlshift_undo, undo_label="Сбросить", undo_icon="edit-undo-symbolic",
+        )
+        self._r_win = SettingRow(
+            "input-keyboard-symbolic", "Win + Space",
+            "Стандартное переключение раскладки GNOME", "Включить",
+            self._on_winspace, None, "setting_kbd_winspace", done_label="Активно",
+            on_undo=self._on_winspace_undo, undo_label="Сбросить", undo_icon="edit-undo-symbolic",
         )
         group.add(self._r_alt)
         group.add(self._r_caps)
         group.add(self._r_ctrl)
+        group.add(self._r_win)
         threading.Thread(target=self._detect_kbd_mode, daemon=True).start()
 
     def _register_setup_search_targets(self):
         self._setup_search_targets = {
             "epm_update": self._r_epm,
-            "sudo": self._r_sudo,
             "gnome_sw": self._r_gnome_sw,
             "trim": self._r_trim,
             "journal": self._r_journal,
@@ -583,12 +562,12 @@ class SetupPage(Gtk.Box):
             "papirus": self._papirus_row,
             "nautilus": self._r_naut,
             "vm_dirty": self._r_dirty,
-            "nautilus_admin": self._r_naut_admin,
             "sushi": self._r_sushi,
             "f3d": self._r_f3d,
             "kbd_altshift": self._r_alt,
             "kbd_caps": self._r_caps,
             "kbd_ctrlshift": self._r_ctrl,
+            "kbd_winspace": self._r_win,
         }
 
     def focus_search_target(self, key: str) -> bool:
@@ -600,46 +579,6 @@ class SetupPage(Gtk.Box):
             scroll_child_into_view(scroll, w)
         GLib.idle_add(w.grab_focus)
         return True
-
-    def _on_sudo(self, row):
-        row.set_working()
-        self._log("\n▶  Включение sudo (добавление в группу wheel)...\n")
-        win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Включение sudo...")
-
-        def _do():
-            user = os.environ.get("SUDO_USER", os.environ.get("USER", ""))
-            if not user:
-                GLib.idle_add(row.set_done, False)
-                GLib.idle_add(self._log, "✘  Не удалось определить имя пользователя.\n")
-                if hasattr(win, "stop_progress"):
-                    GLib.idle_add(win.stop_progress, False)
-                return
-            cmd = ["usermod", "-aG", "wheel", user]
-            try:
-                res = subprocess.run(["pkexec"] + cmd, capture_output=True, text=True)
-                ok = (res.returncode == 0)
-            except Exception:
-                ok = False
-            GLib.idle_add(row.set_done, ok)
-            GLib.idle_add(self._log, "✔  Пользователь добавлен в группу wheel!\n" if ok else "✘  Ошибка. Попробуйте в терминале: su - и usermod -aG wheel <имя>\n")
-            if hasattr(win, "stop_progress"):
-                GLib.idle_add(win.stop_progress, ok)
-
-        threading.Thread(target=_do, daemon=True).start()
-
-    def _on_sudo_undo(self, row):
-        row.set_working()
-        self._log("\n▶  Отключение sudo (удаление из группы wheel)...\n")
-        win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Отключение sudo...")
-        user = os.environ.get("SUDO_USER", os.environ.get("USER", ""))
-        cmd = ["bash", "-c", f"gpasswd -d {user} wheel 2>/dev/null || true"]
-        backend.run_privileged(
-            cmd,
-            lambda _: None,
-            lambda ok: (row.set_undo_done(ok), self._log("✔  Пользователь удалён из группы wheel!\n" if ok else "✘  Ошибка\n"), win.stop_progress(ok) if hasattr(win, "stop_progress") else None),
-        )
 
     def _on_trim_timer(self, row):
         row.set_working()
@@ -738,11 +677,13 @@ class SetupPage(Gtk.Box):
         value = backend.gsettings_get(config.GSETTINGS_KEYBINDINGS, "switch-input-source")
         is_caps = "Caps" in value
         is_ctrl = "Control" in value
-        is_alt = "Alt" in value and not is_ctrl
+        is_alt = "Alt" in value and "Super" not in value
+        is_win = "Super" in value
 
         config.state_set("setting_kbd_altshift", is_alt)
         config.state_set("setting_kbd_capslock", is_caps)
         config.state_set("setting_kbd_ctrlshift", is_ctrl)
+        config.state_set("setting_kbd_winspace", is_win)
 
         if is_caps:
             config.state_set("setting_kbd_mode", "capslock")
@@ -750,10 +691,17 @@ class SetupPage(Gtk.Box):
             config.state_set("setting_kbd_mode", "ctrlshift")
         elif is_alt:
             config.state_set("setting_kbd_mode", "altshift")
+        elif is_win:
+            config.state_set("setting_kbd_mode", "winspace")
 
         GLib.idle_add(self._r_caps._set_ui, is_caps)
         GLib.idle_add(self._r_ctrl._set_ui, is_ctrl)
         GLib.idle_add(self._r_alt._set_ui, is_alt)
+        GLib.idle_add(self._r_win._set_ui, is_win)
+
+    def _reset_kbd_bindings(self):
+        backend.run_gsettings(["reset", config.GSETTINGS_KEYBINDINGS, "switch-input-source"])
+        backend.run_gsettings(["reset", config.GSETTINGS_KEYBINDINGS, "switch-input-source-backward"])
 
     def _on_altshift(self, row):
         row.set_working()
@@ -768,11 +716,26 @@ class SetupPage(Gtk.Box):
                 config.state_set("setting_kbd_mode", "altshift")
                 config.state_set("setting_kbd_capslock", False)
                 config.state_set("setting_kbd_ctrlshift", False)
+                config.state_set("setting_kbd_winspace", False)
             GLib.idle_add(row.set_done, ok)
             GLib.idle_add(self._r_caps._set_ui, False)
             GLib.idle_add(self._r_ctrl._set_ui, False)
+            GLib.idle_add(self._r_win._set_ui, False)
             GLib.idle_add(self._log, "✔  Alt+Shift готов!\n" if ok else "✘  Ошибка\n")
 
+        threading.Thread(target=_do, daemon=True).start()
+
+    def _on_altshift_undo(self, row):
+        row.set_working()
+        self._log("\n▶  Сброс Alt+Shift...\n")
+        def _do():
+            self._reset_kbd_bindings()
+            config.state_set("setting_kbd_altshift", False)
+            GLib.idle_add(row.set_undo_done, True)
+            GLib.idle_add(self._log, "✔  Сброшено на Win+Space\n")
+            GLib.idle_add(self._r_win._set_ui, True)
+            GLib.idle_add(self._r_caps._set_ui, False)
+            GLib.idle_add(self._r_ctrl._set_ui, False)
         threading.Thread(target=_do, daemon=True).start()
 
     def _on_capslock(self, row):
@@ -788,11 +751,26 @@ class SetupPage(Gtk.Box):
                 config.state_set("setting_kbd_mode", "capslock")
                 config.state_set("setting_kbd_altshift", False)
                 config.state_set("setting_kbd_ctrlshift", False)
+                config.state_set("setting_kbd_winspace", False)
             GLib.idle_add(row.set_done, ok)
             GLib.idle_add(self._r_alt._set_ui, False)
             GLib.idle_add(self._r_ctrl._set_ui, False)
+            GLib.idle_add(self._r_win._set_ui, False)
             GLib.idle_add(self._log, "✔  CapsLock готов!\n" if ok else "✘  Ошибка\n")
 
+        threading.Thread(target=_do, daemon=True).start()
+
+    def _on_capslock_undo(self, row):
+        row.set_working()
+        self._log("\n▶  Сброс CapsLock...\n")
+        def _do():
+            self._reset_kbd_bindings()
+            config.state_set("setting_kbd_capslock", False)
+            GLib.idle_add(row.set_undo_done, True)
+            GLib.idle_add(self._log, "✔  Сброшено на Win+Space\n")
+            GLib.idle_add(self._r_win._set_ui, True)
+            GLib.idle_add(self._r_alt._set_ui, False)
+            GLib.idle_add(self._r_ctrl._set_ui, False)
         threading.Thread(target=_do, daemon=True).start()
 
     def _on_ctrlshift(self, row):
@@ -808,11 +786,59 @@ class SetupPage(Gtk.Box):
                 config.state_set("setting_kbd_mode", "ctrlshift")
                 config.state_set("setting_kbd_altshift", False)
                 config.state_set("setting_kbd_capslock", False)
+                config.state_set("setting_kbd_winspace", False)
             GLib.idle_add(row.set_done, ok)
             GLib.idle_add(self._r_alt._set_ui, False)
             GLib.idle_add(self._r_caps._set_ui, False)
+            GLib.idle_add(self._r_win._set_ui, False)
             GLib.idle_add(self._log, "✔  Ctrl+Shift готов!\n" if ok else "✘  Ошибка\n")
 
+        threading.Thread(target=_do, daemon=True).start()
+
+    def _on_ctrlshift_undo(self, row):
+        row.set_working()
+        self._log("\n▶  Сброс Ctrl+Shift...\n")
+        def _do():
+            self._reset_kbd_bindings()
+            config.state_set("setting_kbd_ctrlshift", False)
+            GLib.idle_add(row.set_undo_done, True)
+            GLib.idle_add(self._log, "✔  Сброшено на Win+Space\n")
+            GLib.idle_add(self._r_win._set_ui, True)
+            GLib.idle_add(self._r_alt._set_ui, False)
+            GLib.idle_add(self._r_caps._set_ui, False)
+        threading.Thread(target=_do, daemon=True).start()
+
+    def _on_winspace(self, row):
+        row.set_working()
+        self._log("\n▶  Настройка Win+Space...\n")
+
+        def _do():
+            ok = (
+                backend.run_gsettings(["set", config.GSETTINGS_KEYBINDINGS, "switch-input-source", "['<Super>space']"])
+                and backend.run_gsettings(["set", config.GSETTINGS_KEYBINDINGS, "switch-input-source-backward", "['<Shift><Super>space']"])
+            )
+            if ok:
+                config.state_set("setting_kbd_mode", "winspace")
+                config.state_set("setting_kbd_altshift", False)
+                config.state_set("setting_kbd_capslock", False)
+                config.state_set("setting_kbd_ctrlshift", False)
+            GLib.idle_add(row.set_done, ok)
+            GLib.idle_add(self._r_alt._set_ui, False)
+            GLib.idle_add(self._r_caps._set_ui, False)
+            GLib.idle_add(self._r_ctrl._set_ui, False)
+            GLib.idle_add(self._log, "✔  Win+Space готов!\n" if ok else "✘  Ошибка\n")
+
+        threading.Thread(target=_do, daemon=True).start()
+
+    def _on_winspace_undo(self, row):
+        row.set_working()
+        self._log("\n▶  Сброс Win+Space...\n")
+        def _do():
+            self._reset_kbd_bindings()
+            config.state_set("setting_kbd_winspace", False)
+            GLib.idle_add(row.set_undo_done, True)
+            GLib.idle_add(self._log, "✔  Сброшено на Win+Space\n")
+            GLib.idle_add(self._r_win._set_ui, True)
         threading.Thread(target=_do, daemon=True).start()
 
 
@@ -826,7 +852,7 @@ class SetupPage(Gtk.Box):
     def _create_papirus_row(self):
         row = Adw.ActionRow()
         row.set_title("Иконки Papirus")
-        row.set_subtitle("Пакет papirus-remix-icon-theme — тема подбирается по светлой/тёмной схеме")
+        row.set_subtitle("Пакет papirus-icon-theme — тема подбирается по светлой/тёмной схеме")
         row.add_prefix(make_icon("application-x-addon-symbolic"))
 
         model = Gtk.StringList.new([k.capitalize() for k in self._PAPIRUS_COLOR_KEYS])
@@ -861,7 +887,7 @@ class SetupPage(Gtk.Box):
         return row
 
     def _check_papirus(self):
-        installed = backend.check_app_installed({"check": ["rpm", "papirus-remix-icon-theme"]})
+        installed = backend.check_app_installed({"check": ["rpm", "papirus-icon-theme"]})
         config.state_set("app_papirus_icons", installed)
         applied = False
         if installed:
@@ -903,7 +929,7 @@ class SetupPage(Gtk.Box):
     def _on_install_papirus(self):
         self._papirus_btn.set_sensitive(False)
         self._papirus_btn.set_label("…")
-        self._log("\n▶  Установка papirus-remix-icon-theme...\n")
+        self._log("\n▶  Установка papirus-icon-theme...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Установка иконок Papirus...")
 
@@ -914,17 +940,17 @@ class SetupPage(Gtk.Box):
                 GLib.idle_add(self._set_papirus_ui, True)
                 GLib.idle_add(self._on_apply_papirus)
             else:
-                self._log("✘  Ошибка установки papirus-remix-icon-theme\n")
+                self._log("✘  Ошибка установки papirus-icon-theme\n")
                 if hasattr(win, "stop_progress"): win.stop_progress(ok)
                 GLib.idle_add(self._set_papirus_ui, False)
                 GLib.idle_add(self._papirus_btn.set_label, "Повторить")
 
-        backend.run_privileged(["dnf", "install", "-y", "papirus-remix-icon-theme"], self._log, _done)
+        backend.run_privileged(["dnf", "install", "-y", "papirus-icon-theme"], self._log, _done)
 
     def _on_uninstall_papirus(self):
         self._papirus_trash_btn.set_sensitive(False)
         self._papirus_btn.set_sensitive(False)
-        self._log("\n▶  Удаление papirus-remix-icon-theme...\n")
+        self._log("\n▶  Удаление papirus-icon-theme...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Удаление иконок Papirus...")
 
@@ -933,11 +959,11 @@ class SetupPage(Gtk.Box):
                 self._log("✔  Papirus удалён!\n")
                 config.state_set("papirus_applied", False)
             else:
-                self._log("✘  Ошибка удаления papirus-remix-icon-theme\n")
+                self._log("✘  Ошибка удаления papirus-icon-theme\n")
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
             GLib.idle_add(self._set_papirus_ui, not ok)
 
-        backend.run_privileged(["dnf", "remove", "-y", "papirus-remix-icon-theme"], self._log, _done)
+        backend.run_privileged(["dnf", "remove", "-y", "papirus-icon-theme"], self._log, _done)
 
     def _on_apply_papirus(self):
         idx = self._papirus_color_drop.get_selected()

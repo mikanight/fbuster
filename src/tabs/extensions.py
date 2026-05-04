@@ -105,8 +105,8 @@ RECOMMENDED = [
         "7065",
     ),
     (
-        "tweaks-system-menu@extensions.gnome.org",
-        "Tweaks & Extensions in System Menu",
+        "tweaks-system-menu@extensions.gnome-shell.fifi.org",
+        "Tweaks and Extensions in System Menu",
         "Добавляет ярлыки Tweaks и Extensions в системное меню.",
         "1653",
     ),
@@ -117,19 +117,19 @@ RECOMMENDED = [
         "5660",
     ),
     (
-        "windowIsReady_Remover@nunofarruca",
+        "windowIsReady_Remover@nunofarruca@gmail.com",
         "Window Is Ready Notification Remover",
         "Убирает уведомление «Окно готово» при запуске приложений.",
         "1007",
     ),
     (
-        "advanced-weather-companion@timur@linux.com",
+        "advanced-weather@sanjai.com",
         "Advanced Weather Companion",
         "Расширенный погодный виджет с прогнозом на несколько дней.",
         "7603",
     ),
     (
-        "transcodeappsearch@marmistrz",
+        "transcode-appsearch@k.kubusha@gmail.com",
         "Transcode App Search",
         "Кастомизация поиска приложений в обзоре GNOME.",
         "928",
@@ -140,12 +140,6 @@ RECOMMENDED = [
         "Zorkiy",
         "Инструмент для мониторинга и управления приоритетами процессов. Требует system76-scheduler.",
         "github:https://github.com/Toxblh/gnome-shell-extension-zorkiy",
-    ),
-    (
-        "icon-matcher@peppodev",
-        "Icon Matcher",
-        "Автоматически подбирает иконки приложений под выбранную тему.",
-        "github:https://github.com/PeppoDev/icon-matcher",
     ),
 ]
 
@@ -366,7 +360,7 @@ def _read_extensions_from(ext_dir: Path) -> list[tuple[str, str, str]]:
         try:
             data = json.loads(meta.read_text(encoding="utf-8"))
             uuid = data.get("uuid", meta.parent.name)
-            name = data.get("name", uuid)
+            name = GLib.markup_escape_text(data.get("name", uuid))
             desc = data.get("description", "")
             result.append((uuid, name, desc))
         except Exception:
@@ -1137,34 +1131,32 @@ class ExtensionsPage(Gtk.Box):
         def _do():
             ok = False
             try:
-                r = subprocess.run(
-                    ["gnome-extensions", "uninstall", uuid],
-                    capture_output=True, text=True,
-                )
-                ok = r.returncode == 0
+                ext_path = _USER_EXT_DIR / uuid
+                if not ext_path.exists():
+                    for meta in _USER_EXT_DIR.glob("*/metadata.json"):
+                        try:
+                            if json.loads(meta.read_text(encoding="utf-8")).get("uuid") == uuid:
+                                ext_path = meta.parent
+                                break
+                        except Exception:
+                            pass
 
-                if not ok:
-                    ext_path = _USER_EXT_DIR / uuid
-                    if not ext_path.exists():
-                        for meta in _USER_EXT_DIR.glob("*/metadata.json"):
-                            try:
-                                if json.loads(meta.read_text(encoding="utf-8")).get("uuid") == uuid:
-                                    ext_path = meta.parent
-                                    break
-                            except Exception:
-                                pass
-
-                    if ext_path.exists():
+                if ext_path.exists():
+                    r = subprocess.run(
+                        ["gnome-extensions", "uninstall", uuid],
+                        capture_output=True, text=True,
+                    )
+                    if r.returncode != 0:
                         shutil.rmtree(ext_path)
-                        ok = True
-                    else:
-                        GLib.idle_add(self._log, "ℹ  Папка расширения не найдена (возможно, уже удалено).\n")
+                    ok = True
+                else:
+                    GLib.idle_add(self._log, "ℹ  Расширение не найдено (возможно, уже удалено).\n")
 
                 if ok:
                     GLib.idle_add(self._log, f"✔  {uuid} удалён!\n")
                     GLib.idle_add(self._refresh_installed)
                 else:
-                    GLib.idle_add(self._log, f"✘  Не удалось удалить: {r.stderr.strip()}\n")
+                    GLib.idle_add(self._log, f"✘  Не удалось удалить {uuid}\n")
 
             except Exception as e:
                 GLib.idle_add(self._log, f"✘  Ошибка удаления: {e}\n")

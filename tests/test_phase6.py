@@ -45,11 +45,11 @@ class TestExtensionsCatalog:
             "date-menu-formatter@marcinjakubowski.github.com",
             "status-area-horizontal-spacing@mathematical.coffee.gmail.com",
             "tilingshell@ferrarodomenico.com",
-            "tweaks-system-menu@extensions.gnome.org",
+            "tweaks-system-menu@extensions.gnome-shell.fifi.org",
             "weatherornot@somepaulo.github.io",
-            "windowIsReady_Remover@nunofarruca",
-            "advanced-weather-companion@timur@linux.com",
-            "transcodeappsearch@marmistrz",
+            "windowIsReady_Remover@nunofarruca@gmail.com",
+            "advanced-weather@sanjai.com",
+            "transcode-appsearch@k.kubusha@gmail.com",
         ]
         for uuid in new_exts:
             assert uuid in s, f"New extension {uuid} missing"
@@ -57,9 +57,8 @@ class TestExtensionsCatalog:
     def test_github_extensions_included(self):
         s = self.src()
         assert "zorkiy@toxblh.ru" in s
-        assert "icon-matcher@peppodev" in s
         assert "github:https://github.com/Toxblh/gnome-shell-extension-zorkiy" in s
-        assert "github:https://github.com/PeppoDev/icon-matcher" in s
+        assert "icon-matcher" not in s
 
     def test_epm_install_removed(self):
         s = self.src()

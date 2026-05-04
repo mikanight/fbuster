@@ -1,27 +1,5 @@
 """Фасад: реэкспорт публичного API core для вкладок (одна точка импорта)."""
 
-from core.checks import (
-    check_app_installed,
-    is_aac_installed,
-    is_davinci_installed,
-    is_drive_menu_patched,
-    is_fairlight_installed,
-    is_flathub_enabled,
-    is_fractional_scaling_enabled,
-    is_fstrim_enabled,
-    is_journal_optimized,
-    is_system_busy,
-    is_vm_dirty_optimized,
-)
-from core.privileges import (
-    cancel_current,
-    run_epm,
-    run_epm_sync,
-    run_privileged,
-    run_privileged_sync,
-    start_pkexec_shell,
-)
-from core.gsettings import gsettings_get, run_gsettings
 from core.borg import (
     DEFAULT_EXCLUDES,
     OPTIONAL_EXCLUDES,
@@ -68,5 +46,27 @@ from core.btrfs import (
     is_home_on_btrfs,
     write_btrfs_systemd_units,
 )
+from core.checks import (
+    check_app_installed,
+    is_aac_installed,
+    is_davinci_installed,
+    is_drive_menu_patched,
+    is_fairlight_installed,
+    is_flathub_enabled,
+    is_fractional_scaling_enabled,
+    is_fstrim_enabled,
+    is_journal_optimized,
+    is_system_busy,
+    is_vm_dirty_optimized,
+)
+from core.gsettings import gsettings_get, run_gsettings
 from core.mirror import is_uefi, list_available_disks
+from core.privileges import (
+    cancel_current,
+    run_epm,
+    run_epm_sync,
+    run_privileged,
+    run_privileged_sync,
+    start_pkexec_shell,
+)
 from core.tweaks import apply_vm_dirty, install_aac_codec

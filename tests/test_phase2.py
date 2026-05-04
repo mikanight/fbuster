@@ -50,10 +50,12 @@ class TestSetupPyRemovals:
 
     def test_sudo_uses_usermod(self):
         src = setup_src()
-        assert "usermod" in src
-        assert "gpasswd -d" in src
+        assert "usermod" not in src
+        assert "gpasswd -d" not in src
         assert "control sudowheel" not in src
         assert "sudowheel enabled" not in src
+        assert "_on_sudo" not in src
+        assert "_r_sudo" not in src
 
     def test_f3d_uses_dnf(self):
         src = setup_src()
@@ -75,11 +77,11 @@ class TestSetupPyRemovals:
 
     def test_papirus_uses_dnf(self):
         src = setup_src()
-        assert '["dnf", "install", "-y", "papirus-remix-icon-theme"]' in src
+        assert '["dnf", "install", "-y", "papirus-icon-theme"]' in src
 
     def test_nautilus_dnf_commands(self):
         src = setup_src()
-        assert '["dnf", "install", "-y", "nautilus-admin-gtk4"]' in src
+        assert "nautilus-admin" not in src
         assert '["dnf", "install", "-y", "sushi"]' in src
 
 
