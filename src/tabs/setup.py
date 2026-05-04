@@ -19,14 +19,6 @@ from ui.install_preview_dialog import InstallPreviewDialog
 from ui.widgets import make_button, make_icon, make_scrolled_page, scroll_child_into_view
 from ui.rows import SettingRow
 
-_SOURCES_DIR = Path("/etc/apt/sources.list.d")
-_MIRRORS = [
-    ("ALT Linux", "alt.list",    "ALT Linux (ftp.altlinux.org) — официальный"),
-    ("Яндекс",    "yandex.list", "Яндекс (mirror.yandex.ru) — быстрое, Россия"),
-    ("HEAnet",    "heanet.list", "HEAnet (ftp.heanet.ie) — Ирландия"),
-    ("IPSL",      "ipsl.list",   "IPSL (distrib-coffee.ipsl.jussieu.fr) — Франция"),
-]
-
 def _make_channel_badge(channel: str) -> Gtk.Label:
     lbl = Gtk.Label(label=channel)
     lbl.add_css_class("ab-source-badge")
@@ -38,31 +30,6 @@ def _make_channel_badge(channel: str) -> Gtk.Label:
         lbl.add_css_class("error")
     lbl.set_valign(Gtk.Align.CENTER)
     return lbl
-
-
-def _detect_active_mirror() -> str:
-    for _, fname, _ in _MIRRORS:
-        path = _SOURCES_DIR / fname
-        if not path.exists():
-            continue
-        try:
-            with open(path, encoding="utf-8") as f:
-                for line in f:
-                    if line.startswith("rpm "):
-                        return fname
-        except OSError:
-            pass
-    return "alt.list"
-
-def _build_mirror_switch_cmd(new_list: str) -> list:
-    parts = []
-    for _, fname, _ in _MIRRORS:
-        fpath = f"/etc/apt/sources.list.d/{fname}"
-        if fname == new_list:
-            parts.append(f"sed -i '/^#rpm \\[.*\\] http:\\/\\//s/^#//' '{fpath}'")
-        else:
-            parts.append(f"sed -i '/^rpm /s/^/#/' '{fpath}'")
-    return ["bash", "-c", " && ".join(parts)]
 
 
 class SetupPage(Gtk.Box):
@@ -79,14 +46,15 @@ class SetupPage(Gtk.Box):
         self._register_setup_search_targets()
 
     def _is_sisyphus(self):
-        for path in ["/etc/altlinux-release", "/etc/os-release"]:
-            try:
-                if os.path.exists(path):
-                    with open(path, encoding="utf-8") as f:
-                        if "Sisyphus" in f.read():
-                            return True
-            except Exception:
-                continue
+        try:
+            if os.path.exists("/etc/fedora-release"):
+                return True
+            if os.path.exists("/etc/os-release"):
+                with open("/etc/os-release", encoding="utf-8") as f:
+                    if "fedora" in f.read().lower():
+                        return True
+        except Exception:
+            pass
         return False
 
     @staticmethod
@@ -302,83 +270,7 @@ class SetupPage(Gtk.Box):
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
         threading.Thread(target=_do, daemon=True).start()
         
-    def _build_mirror_menu(self):
-        self._selected_mirror = _detect_active_mirror()
-
-        popover_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-        popover_box.set_margin_top(6)
-        popover_box.set_margin_bottom(6)
-        popover_box.set_margin_start(8)
-        popover_box.set_margin_end(8)
-
-        first = None
-        for _, fname, label in _MIRRORS:
-            if not (_SOURCES_DIR / fname).exists():
-                continue
-            rb = Gtk.CheckButton(label=label)
-            if first is None:
-                first = rb
-            else:
-                rb.set_group(first)
-            if fname == self._selected_mirror:
-                rb.set_active(True)
-            rb.connect("toggled", self._on_mirror_toggled, fname)
-            popover_box.append(rb)
-
-        popover = Gtk.Popover()
-        popover.set_child(popover_box)
-
-        self._mirror_btn = Gtk.MenuButton()
-        self._mirror_btn.set_popover(popover)
-        self._mirror_btn.add_css_class("flat")
-        self._mirror_btn.set_valign(Gtk.Align.CENTER)
-        self._mirror_btn.set_tooltip_text("Зеркало репозитория")
-        self._sync_mirror_label()
-        return self._mirror_btn
-
-    def _on_mirror_toggled(self, radio, fname):
-        if radio.get_active():
-            self._selected_mirror = fname
-            self._sync_mirror_label()
-
-    def _sync_mirror_label(self):
-        for name, fname, _ in _MIRRORS:
-            if fname == self._selected_mirror:
-                self._mirror_btn.set_label(name)
-                break
-
     def _on_epm(self, row):
-        if not backend.is_epm_installed():
-            d = Adw.AlertDialog(
-                heading="EPM не установлен",
-                body="Для обновления системы необходим пакетный менеджер eepm.\nУстановить EPM и затем запустить обновление?",
-            )
-            d.add_response("cancel", "Отмена")
-            d.add_response("install", "Установить и обновить")
-            d.set_response_appearance("install", Adw.ResponseAppearance.SUGGESTED)
-            d.set_default_response("install")
-
-            def _on_response(dialog, response):
-                if response == "install":
-                    self._r_epm_install.set_working()
-                    self._log("\n▶ Установка EPM (eepm)...\n")
-                    win = self.get_root()
-                    if hasattr(win, "start_progress"):
-                        win.start_progress("Установка EPM...")
-                    def _after_install(ok):
-                        GLib.idle_add(self._r_epm_install.set_done, ok)
-                        if hasattr(win, "stop_progress"):
-                            win.stop_progress(ok)
-                        if ok:
-                            GLib.idle_add(self._on_epm, row)
-                        else:
-                            self._log("\n✘ Не удалось установить EPM\n")
-                    backend.run_privileged(["apt-get", "install", "-y", "eepm", "epmgpi", "eepm-play-gui"], self._log, _after_install)
-
-            d.connect("response", _on_response)
-            d.present(self.get_root())
-            return
-
         row.set_working()
         win = self.get_root()
 
@@ -390,7 +282,7 @@ class SetupPage(Gtk.Box):
                 t.set_timeout(8)
                 GLib.idle_add(win.add_toast, t)
 
-        self._log("\n▶  Обновление списка пакетов...\n")
+        self._log("\n▶  Обновление системы...\n")
         if hasattr(win, "start_progress"):
             win.start_progress("Обновление системы...")
 
@@ -398,23 +290,20 @@ class SetupPage(Gtk.Box):
             GLib.idle_add(row.set_done, False)
             GLib.idle_add(row._btn.set_label, "Обновить")
             if ok:
-                self._log("\n✔  ALT Linux обновлён!\n")
+                self._log("\n✔  Fedora обновлена!\n")
             else:
                 self._log("\n✘  Ошибка обновления\n")
             if hasattr(win, "stop_progress"):
                 win.stop_progress(ok)
 
-        def _reset_row():
-            GLib.idle_add(row.set_done, False)
-            GLib.idle_add(row._btn.set_label, "Обновить")
-
         def _run_full_upgrade():
-            self._log("\n▶  epm full-upgrade...\n")
-            backend.run_epm(["epm", "-y", "full-upgrade"], self._log, on_full_upgrade_done)
+            self._log("\n▶  dnf upgrade...\n")
+            backend.run_privileged(["dnf", "upgrade", "-y"], self._log, on_full_upgrade_done)
 
         def on_update_done(ok):
             if not ok:
-                _reset_row()
+                GLib.idle_add(row.set_done, False)
+                GLib.idle_add(row._btn.set_label, "Обновить")
                 self._log("\n✘  Ошибка обновления индексов\n")
                 if hasattr(win, "stop_progress"):
                     win.stop_progress(False)
@@ -425,12 +314,14 @@ class SetupPage(Gtk.Box):
 
             def on_cancel():
                 self._log("\n⚠  Обновление отменено пользователем.\n")
-                _reset_row()
+                GLib.idle_add(row.set_done, False)
+                GLib.idle_add(row._btn.set_label, "Обновить")
                 if hasattr(win, "stop_progress"):
                     win.stop_progress(False)
 
             def on_no_changes():
-                _reset_row()
+                GLib.idle_add(row.set_done, False)
+                GLib.idle_add(row._btn.set_label, "Обновить")
                 if hasattr(win, "stop_progress"):
                     win.stop_progress(True)
 
@@ -438,8 +329,8 @@ class SetupPage(Gtk.Box):
                 lambda: InstallPreviewDialog(
                     parent=self.get_root(),
                     app_name="Обновление системы",
-                    source_label="EPM",
-                    cmd=["apt-get", "dist-upgrade"],
+                    source_label="DNF",
+                    cmd=["dnf", "upgrade"],
                     on_confirm=on_confirm,
                     on_cancel=on_cancel,
                     on_no_changes=on_no_changes,
@@ -450,72 +341,26 @@ class SetupPage(Gtk.Box):
                 ).present()
             )
 
-        def _run_epm_update():
-            backend.run_privileged(["apt-get", "-y", "update"], self._log, on_update_done)
-
-        active_mirror = _detect_active_mirror()
-        selected = getattr(self, "_selected_mirror", active_mirror)
-        if selected != active_mirror:
-            mirror_name = next((n for n, f, _ in _MIRRORS if f == selected), selected)
-            self._log(f"\n▶  Переключение зеркала на {mirror_name}...\n")
-
-            def _after_switch(ok):
-                if ok:
-                    self._log(f"✔  Зеркало переключено на {mirror_name}.\n")
-                    _run_epm_update()
-                else:
-                    self._log("✘  Ошибка переключения зеркала.\n")
-                    GLib.idle_add(_reset_row)
-                    if hasattr(win, "stop_progress"):
-                        GLib.idle_add(win.stop_progress, False)
-
-            backend.run_privileged(_build_mirror_switch_cmd(selected), self._log, _after_switch)
-        else:
-            _run_epm_update()
-
-    def _on_install_epm(self, row):
-        row.set_working()
-        self._log("\n▶ Установка EPM (eepm)...\n")
-        win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Установка EPM...")
-        def _done(ok):
-            row.set_done(ok)
-            if hasattr(win, "stop_progress"): win.stop_progress(ok)
-        backend.run_privileged(["apt-get", "install", "-y", "eepm", "epmgpi", "eepm-play-gui"], self._log, _done)
-
-    def _on_remove_epm(self, row):
-        row.set_working()
-        self._log("\n▶ Удаление EPM (eepm)...\n")
-        win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Удаление EPM...")
-        backend.run_privileged(["apt-get", "remove", "-y", "eepm"], self._log, 
-            lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
-
+        backend.run_privileged(["dnf", "makecache", "-y"], self._log, on_update_done)
 
     def _build_system_group(self, body):
         pkg_group = Adw.PreferencesGroup()
         pkg_group.set_title("Обновление и пакеты")
         body.append(pkg_group)
 
-        pkg_rows = [
-            ("system-software-install-symbolic",   "Установить EPM",              "Пакетный менеджер eepm, необходим для утилиты", "Установить", self._on_install_epm, backend.is_epm_installed, "setting_epm_install", "Установлено", self._on_remove_epm, "Удалить", "user-trash-symbolic"),
-            ("software-update-available-symbolic", "Обновить систему (EPM)",      "Выполняет epm update и epm full-upgrade",       "Обновить",    self._on_epm,         lambda: False,            "", "Обновлено"),
-        ]
-
-        self._r_epm_install, self._r_epm = [SettingRow(*r) for r in pkg_rows]
-
-        mirror_btn = self._build_mirror_menu()
-        self._r_epm._suffix_box.insert_child_after(mirror_btn, self._r_epm._status)
-
-        for r in (self._r_epm_install, self._r_epm):
-            pkg_group.add(r)
+        self._r_epm = SettingRow(
+            "software-update-available-symbolic", "Обновить систему (DNF)",
+            "Выполняет dnf makecache и dnf upgrade", "Обновить",
+            self._on_epm, lambda: False, "", "Обновлено",
+        )
+        pkg_group.add(self._r_epm)
 
         sys_group = Adw.PreferencesGroup()
         sys_group.set_title("Система")
         body.append(sys_group)
-        
+
         sys_rows = [
-            ("security-high-symbolic",             "Включить sudo",               "control sudowheel enabled",                     "Активировать", self._on_sudo,           None,                                  "setting_sudo", "Активировано", self._on_sudo_undo, "Отключить"),
+            ("security-high-symbolic",             "Включить sudo",               "Добавляет пользователя в группу wheel",        "Активировать", self._on_sudo,           None,                                  "setting_sudo", "Активировано", self._on_sudo_undo, "Отключить"),
             ("view-refresh-symbolic",    "Автообновление GNOME Software",      "Отключаем фоновую загрузку GNOME Software", "Отключить",    self._on_gnome_software_updates, lambda: backend.gsettings_get("org.gnome.software", "download-updates") == "false", "setting_gnome_software_updates", "Выключено", self._on_gnome_software_updates_undo, "Включить"),
             ("media-flash-symbolic",               "Автоматический TRIM",         "Включает еженедельную очистку блоков SSD",      "Включить",     self._on_trim_timer,           backend.is_fstrim_enabled,             "setting_trim_auto", "Активировано", self._on_trim_timer_undo, "Отключить"),
             ("document-open-recent-symbolic",      "Лимиты журналов",             "SystemMaxUse=100M и сжатие в journald.conf",    "Настроить",    self._on_journal_limit,  backend.is_journal_optimized,          "setting_journal_opt", "Активировано", self._on_journal_limit_undo, "Сбросить"),
@@ -558,19 +403,6 @@ class SetupPage(Gtk.Box):
             ("view-reveal-symbolic", "Предпросмотр (Sushi)", "Быстрый просмотр файлов по пробелу", "Установить", self._on_install_sushi, lambda: backend.check_app_installed({"check": ["rpm", "sushi"]}), "app_sushi", "Установлено", self._on_remove_sushi, "Удалить", "user-trash-symbolic"),
             ("image-x-generic-symbolic", "3D превью (f3d)", "Визуализация 3D моделей в Nautilus", f3d_btn_label, self._on_install_f3d, lambda: backend.check_app_installed({"check": ["rpm", "f3d"]}), "app_f3d", "Установлено", self._on_remove_f3d, "Удалить", "user-trash-symbolic"),
         ]
-        
-        self._r_naut, self._r_dirty, self._r_naut_admin, self._r_sushi, self._r_f3d = [
-            SettingRow(*r) for r in rows
-        ]
-        
-        if not is_sisyphus:
-            orig_set_ui = self._r_f3d._set_ui
-            def _disabled_set_ui(enabled):
-                orig_set_ui(enabled)
-                if not enabled:
-                    self._r_f3d._btn.set_sensitive(False)
-                    self._r_f3d._btn.set_tooltip_text("Пакет f3d доступен только в репозитории Sisyphus.\nВ стабильных ветках (p10/p11) он на данный момент отсутствует.")
-            self._r_f3d._set_ui = _disabled_set_ui
 
         self._papirus_row = self._create_papirus_row()
 
@@ -637,7 +469,7 @@ class SetupPage(Gtk.Box):
                 self._log("✘  Ошибка установки nautilus-admin-gtk4\n")
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
             if ok: subprocess.run(["nautilus", "-q"])
-        backend.run_epm(["epm", "-i", "-y", "nautilus-admin-gtk4"], self._log, _done)
+        backend.run_privileged(["dnf", "install", "-y", "nautilus-admin-gtk4"], self._log, _done)
 
     def _on_remove_nautilus_admin(self, row):
         row.set_working()
@@ -649,7 +481,7 @@ class SetupPage(Gtk.Box):
             self._log("✔  nautilus-admin-gtk4 удалён!\n" if ok else "✘  Ошибка удаления\n")
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
             if ok: subprocess.run(["nautilus", "-q"])
-        backend.run_epm(["epm", "-e", "-y", "nautilus-admin-gtk4"], self._log, _done)
+        backend.run_privileged(["dnf", "remove", "-y", "nautilus-admin-gtk4"], self._log, _done)
 
     def _on_install_sushi(self, row):
         row.set_working()
@@ -664,7 +496,7 @@ class SetupPage(Gtk.Box):
                 self._log("✘  Ошибка установки Sushi\n")
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
             if ok: subprocess.run(["nautilus", "-q"])
-        backend.run_epm(["epm", "-i", "-y", "sushi"], self._log, _done)
+        backend.run_privileged(["dnf", "install", "-y", "sushi"], self._log, _done)
 
     def _on_remove_sushi(self, row):
         row.set_working()
@@ -676,7 +508,7 @@ class SetupPage(Gtk.Box):
             self._log("✔  Sushi удалён!\n" if ok else "✘  Ошибка удаления Sushi\n")
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
             if ok: subprocess.run(["nautilus", "-q"])
-        backend.run_epm(["epm", "-e", "-y", "sushi"], self._log, _done)
+        backend.run_privileged(["dnf", "remove", "-y", "sushi"], self._log, _done)
 
     def _on_install_f3d(self, row):
         row.set_working()
@@ -684,9 +516,7 @@ class SetupPage(Gtk.Box):
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Установка f3d...")
 
-        cmd = ["epm", "-i", "-y", "f3d"]
-
-        def _final_done(ok):
+        def _done(ok):
             row.set_done(ok)
             if ok:
                 self._log("✔  f3d установлен! Очищаю кэш миниатюр и перезапускаю Nautilus...\n")
@@ -699,85 +529,8 @@ class SetupPage(Gtk.Box):
             else:
                 self._log("✘  Не удалось установить f3d. Возможно, пакет отсутствует в репозитории.\n")
                 if hasattr(win, "stop_progress"): win.stop_progress(ok)
-                GLib.idle_add(self._ask_f3d_task_id, row)
 
-        def _retry_install_after_update(ok):
-            if not ok:
-                self._log("✘  Ошибка обновления индексов.\n")
-                _final_done(False)
-                return
-            self._log("\n▶  Повторная попытка установки f3d (после update)...\n")
-            backend.run_epm(cmd, self._log, _final_done)
-
-        def _retry_install_after_dedup(ok):
-            def _after_dedup_install(ok2):
-                if ok2:
-                    _final_done(True)
-                else:
-                    self._log("\n⚠  Ошибка. Пробую обновить индексы (epm update)...\n")
-                    backend.run_epm(["epm", "update"], self._log, _retry_install_after_update)
-            
-            self._log("\n▶  Повторная попытка установки f3d (после dedup)...\n")
-            backend.run_epm(cmd, self._log, _after_dedup_install)
-
-        def _first_attempt_done(ok):
-            if ok:
-                _final_done(True)
-            else:
-                self._log("\n⚠  Ошибка установки. Пробую исправить дубликаты (apt-get dedup)...\n")
-                backend.run_privileged(["apt-get", "dedup", "-y"], self._log, _retry_install_after_dedup)
-
-        backend.run_epm(cmd, self._log, _first_attempt_done)
-
-    def _ask_f3d_task_id(self, row):
-        entry = Gtk.Entry()
-        entry.set_placeholder_text("Например: 345678")
-        entry.set_input_purpose(Gtk.InputPurpose.DIGITS)
-        
-        dialog = Adw.AlertDialog(
-            heading="Установка из задания (Task)",
-            body="Пакет f3d не найден в репозитории.\nЕсли вы знаете ID задания в сборочнице, введите его:",
-        )
-        dialog.set_extra_child(entry)
-        dialog.add_response("cancel", "Отмена")
-        dialog.add_response("install", "Установить")
-        dialog.set_response_appearance("install", Adw.ResponseAppearance.SUGGESTED)
-        
-        def _on_response(_d, res):
-            if res == "install":
-                task_id = entry.get_text().strip()
-                if task_id:
-                    self._install_f3d_task(row, task_id)
-            else:
-                row.set_done(False)
-        
-        dialog.connect("response", _on_response)
-        dialog.present(self.get_root())
-
-    def _install_f3d_task(self, row, task_id):
-        row.set_working()
-        self._log(f"\n▶  Установка f3d из задания #{task_id}...\n")
-        win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress(f"Установка f3d (задание #{task_id})...")
-
-        def _done(ok):
-            row.set_done(ok)
-            if ok:
-                self._log("✔  f3d установлен из задания! Перезапускаю Nautilus...\n")
-            else:
-                self._log(f"✘  Ошибка установки задания #{task_id}\n")
-            if hasattr(win, "stop_progress"): win.stop_progress(ok)
-            if ok: subprocess.run(["nautilus", "-q"])
-        
-        cmd = [
-            "bash", "-c",
-            f"apt-get install -y apt-repo && "
-            f"apt-repo add task {task_id} && "
-            f"apt-get update && "
-            f"apt-get install -y f3d; "
-            f"RET=$?; apt-repo rm task {task_id}; exit $RET"
-        ]
-        backend.run_privileged(cmd, self._log, _done)
+        backend.run_privileged(["dnf", "install", "-y", "f3d"], self._log, _done)
 
     def _on_remove_f3d(self, row):
         row.set_working()
@@ -789,7 +542,7 @@ class SetupPage(Gtk.Box):
             self._log("✔  f3d удалён!\n" if ok else "✘  Ошибка удаления f3d\n")
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
             if ok: subprocess.run(["nautilus", "-q"])
-        backend.run_epm(["epm", "-e", "-y", "f3d"], self._log, _done)
+        backend.run_privileged(["dnf", "remove", "-y", "f3d"], self._log, _done)
 
 
     def _build_keyboard_group(self, body):
@@ -819,7 +572,6 @@ class SetupPage(Gtk.Box):
 
     def _register_setup_search_targets(self):
         self._setup_search_targets = {
-            "epm_install": self._r_epm_install,
             "epm_update": self._r_epm,
             "sudo": self._r_sudo,
             "gnome_sw": self._r_gnome_sw,
@@ -849,20 +601,26 @@ class SetupPage(Gtk.Box):
 
     def _on_sudo(self, row):
         row.set_working()
-        self._log("\n▶  Включение sudo...\n")
+        self._log("\n▶  Включение sudo (добавление в группу wheel)...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Включение sudo...")
 
         def _do():
-            cmd = ["pkexec", "/usr/sbin/control", "sudowheel", "enabled"]
+            user = os.environ.get("SUDO_USER", os.environ.get("USER", ""))
+            if not user:
+                GLib.idle_add(row.set_done, False)
+                GLib.idle_add(self._log, "✘  Не удалось определить имя пользователя.\n")
+                if hasattr(win, "stop_progress"):
+                    GLib.idle_add(win.stop_progress, False)
+                return
+            cmd = ["usermod", "-aG", "wheel", user]
             try:
-                res = subprocess.run(cmd, capture_output=True, text=True)
+                res = subprocess.run(["pkexec"] + cmd, capture_output=True, text=True)
                 ok = (res.returncode == 0)
             except Exception:
                 ok = False
-
             GLib.idle_add(row.set_done, ok)
-            GLib.idle_add(self._log, "✔  sudo включён (через pkexec)!\n" if ok else "✘  Ошибка. Попробуйте в терминале: su - и control sudowheel enabled\n")
+            GLib.idle_add(self._log, "✔  Пользователь добавлен в группу wheel!\n" if ok else "✘  Ошибка. Попробуйте в терминале: su - и usermod -aG wheel <имя>\n")
             if hasattr(win, "stop_progress"):
                 GLib.idle_add(win.stop_progress, ok)
 
@@ -870,13 +628,15 @@ class SetupPage(Gtk.Box):
 
     def _on_sudo_undo(self, row):
         row.set_working()
-        self._log("\n▶  Отключение sudo...\n")
+        self._log("\n▶  Отключение sudo (удаление из группы wheel)...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Отключение sudo...")
+        user = os.environ.get("SUDO_USER", os.environ.get("USER", ""))
+        cmd = ["bash", "-c", f"gpasswd -d {user} wheel 2>/dev/null || true"]
         backend.run_privileged(
-            ["control", "sudowheel", "disabled"],
+            cmd,
             lambda _: None,
-            lambda ok: (row.set_undo_done(ok), self._log("✔  sudo отключён!\n" if ok else "✘  Ошибка\n"), win.stop_progress(ok) if hasattr(win, "stop_progress") else None),
+            lambda ok: (row.set_undo_done(ok), self._log("✔  Пользователь удалён из группы wheel!\n" if ok else "✘  Ошибка\n"), win.stop_progress(ok) if hasattr(win, "stop_progress") else None),
         )
 
     def _on_trim_timer(self, row):
@@ -1157,7 +917,7 @@ class SetupPage(Gtk.Box):
                 GLib.idle_add(self._set_papirus_ui, False)
                 GLib.idle_add(self._papirus_btn.set_label, "Повторить")
 
-        backend.run_privileged(["apt-get", "install", "-y", "papirus-remix-icon-theme"], self._log, _done)
+        backend.run_privileged(["dnf", "install", "-y", "papirus-remix-icon-theme"], self._log, _done)
 
     def _on_uninstall_papirus(self):
         self._papirus_trash_btn.set_sensitive(False)
@@ -1175,7 +935,7 @@ class SetupPage(Gtk.Box):
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
             GLib.idle_add(self._set_papirus_ui, not ok)
 
-        backend.run_privileged(["apt-get", "remove", "-y", "papirus-remix-icon-theme"], self._log, _done)
+        backend.run_privileged(["dnf", "remove", "-y", "papirus-remix-icon-theme"], self._log, _done)
 
     def _on_apply_papirus(self):
         idx = self._papirus_color_drop.get_selected()

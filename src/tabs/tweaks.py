@@ -29,18 +29,9 @@ _ALT_ZERO_GUIDE_URL = "https://plafon.gitbook.io/alt-zero"
 _KERNEL_SCHED_SEARCH_IDS = frozenset({"sched_ext", "scx", "intel_scx_meteor"})
 _USERSPACE_SCHED_SEARCH_IDS = frozenset({"ananicy", "system76_scheduler"})
 
-# Pill badge (Sisyphus-only packages, orange) + red emphasis for irreversible migration warning row.
+# Pill badge — removed Sisyphus-specific badges. Only irreversible & experimental remain.
 _tweak_page_css = Gtk.CssProvider()
 _tweak_page_css.load_from_data(b"""
-    .ab-tweak-sisyphus-badge {
-        font-size: 0.72em;
-        font-weight: 600;
-        min-height: 0;
-        padding: 2px 8px;
-        border-radius: 999px;
-        color: @warning_color;
-        background-color: alpha(@warning_color, 0.22);
-    }
     .ab-tweak-irreversible-row image,
     .ab-tweak-irreversible-row label {
         color: @error_color;
@@ -48,25 +39,6 @@ _tweak_page_css.load_from_data(b"""
     .ab-tweak-irreversible-row .dim-label {
         color: @error_color;
         opacity: 1;
-    }
-    .ab-tweak-branch-badge {
-        font-size: 0.72em;
-        font-weight: 600;
-        min-height: 0;
-        padding: 2px 8px;
-        border-radius: 999px;
-    }
-    .ab-tweak-branch-badge-stable {
-        color: @success_color;
-        background-color: alpha(@success_color, 0.15);
-    }
-    .ab-tweak-branch-badge-rolling {
-        color: @warning_color;
-        background-color: alpha(@warning_color, 0.20);
-    }
-    .ab-tweak-branch-badge-unknown {
-        color: alpha(currentColor, 0.55);
-        background-color: alpha(currentColor, 0.08);
     }
     .ab-tweak-intel-only-badge {
         font-size: 0.72em;
@@ -100,37 +72,6 @@ _tweak_page_css.load_from_data(b"""
     }
 """)
 
-def _is_sisyphus():
-    for path in ["/etc/altlinux-release", "/etc/os-release"]:
-        if os.path.exists(path):
-            try:
-                with open(path, encoding="utf-8") as f:
-                    if "Sisyphus" in f.read():
-                        return True
-            except Exception:
-                pass
-    return False
-
-
-def _detect_branch():
-    try:
-        for fname in sorted(os.listdir("/etc/apt/sources.list.d")):
-            if not fname.endswith(".list"):
-                continue
-            with open(f"/etc/apt/sources.list.d/{fname}", encoding="utf-8") as f:
-                for line in f:
-                    if not line.startswith("rpm "):
-                        continue
-                    if "Sisyphus" in line:
-                        return "sisyphus"
-                    m = re.search(r"\bp(\d+)/branch\b", line)
-                    if m:
-                        return f"p{m.group(1)}"
-    except Exception:
-        pass
-    return "unknown"
-
-
 class TweaksPage(Gtk.Box):
     def __init__(self, log_fn):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
@@ -161,8 +102,6 @@ class TweaksPage(Gtk.Box):
 
         scroll_general, body_general = make_scrolled_page()
         self._scroll_general = scroll_general
-        self._build_platform_sisyphus_intro(body_general)
-        self._build_sisyphus_group(body_general)
         self._build_fixes_group(body_general)
         self._sub_stack.add_titled_with_icon(
             scroll_general, "general", "Общие твики", "preferences-system-symbolic",
@@ -217,12 +156,9 @@ class TweaksPage(Gtk.Box):
         self._meteor_section.apply_sched_ext_gate(ok)
 
     def _apply_lavd_sched_ext_gating(self, sched_ok: bool) -> None:
-        is_sis = _is_sisyphus()
         for row in (self._row_lavd_std, self._row_lavd_auto):
-            row.set_sensitive(is_sis and sched_ok)
-            if not is_sis:
-                row.set_tooltip_text("Требуется репозиторий Sisyphus")
-            elif not sched_ok:
+            row.set_sensitive(sched_ok)
+            if not sched_ok:
                 row.set_tooltip_text(
                     "Сначала подключите sched_ext в ядре (блок «Поддержка sched_ext в ядре», подвкладка «Планировщик ядра»)."
                 )
@@ -234,41 +170,6 @@ class TweaksPage(Gtk.Box):
             Gio.AppInfo.launch_default_for_uri(_ALT_ZERO_GUIDE_URL, None)
         except GLib.Error:
             pass
-
-    def _build_platform_sisyphus_intro(self, body):
-        group = Adw.PreferencesGroup()
-        row = Adw.ActionRow()
-        row.set_title("Платформа (p10, p11, …) и Сизиф (Sisyphus)")
-        row.set_subtitle(
-            "Ветки вида p10, p11 — это стабильная платформа ALT: согласованный набор пакетов и обновлений "
-            "в духе LTS, предсказуемый цикл обслуживания, ориентир на рабочие станции и корпоративное "
-            "применение (буква p — «платформа»).\n\n"
-            "Sisyphus (в обиходе — Сизиф) — основной rolling-репозиторий разработки: пакеты обновляются "
-            "постоянно, в нём появляются новейшие версии ПО. От него собирают Regular и другие «живые» "
-            "сборки; база свежее, но изменения и регрессии возможны чаще, чем на стабильной платформе.\n\n"
-            "Переход с ветки p* на репозиторий Sisyphus (блок ниже) — это смена стабильной платформы на "
-            "rolling: откат к прежней ветке без переустановки системы обычно невозможен."
-        )
-        row.set_activatable(False)
-        row.add_prefix(Gtk.Image.new_from_icon_name("dialog-information-symbolic"))
-
-        link_btn = Gtk.Button()
-        link_btn.add_css_class("ab-alt-zero-guide-badge")
-        link_btn.add_css_class("flat")
-        link_btn.set_valign(Gtk.Align.CENTER)
-        link_btn.set_tooltip_text("ALT Zero")
-        link_inner = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        link_inner.set_valign(Gtk.Align.CENTER)
-        ext_icon = Gtk.Image.new_from_icon_name("adw-external-link-symbolic")
-        ext_icon.set_pixel_size(14)
-        link_inner.append(ext_icon)
-        link_inner.append(Gtk.Label(label="ALT Zero"))
-        link_btn.set_child(link_inner)
-        link_btn.connect("clicked", self._on_alt_zero_guide_clicked)
-        row.add_suffix(link_btn)
-
-        group.add(row)
-        body.append(group)
 
     def _build_userspace_priorities_tab_intro(self, body):
         group = Adw.PreferencesGroup()
@@ -292,8 +193,6 @@ class TweaksPage(Gtk.Box):
         title: str,
         subtitle: str,
         *,
-        sisyphus_only_badge: bool = False,
-        sisyphus_only_tooltip: str = "",
         error_emphasis: bool = False,
     ) -> Adw.ActionRow:
         row = Adw.ActionRow()
@@ -305,13 +204,6 @@ class TweaksPage(Gtk.Box):
         icon = Gtk.Image.new_from_icon_name(icon_name)
         icon.set_valign(Gtk.Align.CENTER)
         row.add_prefix(icon)
-        if sisyphus_only_badge:
-            badge = Gtk.Label(label="Только Sisyphus")
-            badge.add_css_class("ab-tweak-sisyphus-badge")
-            badge.set_valign(Gtk.Align.CENTER)
-            if sisyphus_only_tooltip:
-                badge.set_tooltip_text(sisyphus_only_tooltip)
-            row.add_suffix(badge)
         group.add(row)
         return row
 
@@ -324,224 +216,7 @@ class TweaksPage(Gtk.Box):
         )
         return lbl
 
-    def _make_branch_badge_label(self, branch: str) -> Gtk.Widget:
-        if branch == "sisyphus":
-            text = "Текущая ветка: Sisyphus"
-            variant = "ab-tweak-branch-badge-rolling"
-        elif re.match(r"^p\d+$", branch):
-            text = f"Текущая ветка: {branch}"
-            variant = "ab-tweak-branch-badge-stable"
-        elif branch == "unknown":
-            text = "Текущая ветка: неизвестно"
-            variant = "ab-tweak-branch-badge-unknown"
-        else:
-            text = f"Текущая ветка: {branch}"
-            variant = "ab-tweak-branch-badge-unknown"
-        lbl = Gtk.Label(label=text)
-        lbl.add_css_class("ab-tweak-branch-badge")
-        lbl.add_css_class(variant)
-        lbl.set_valign(Gtk.Align.CENTER)
-        return lbl
-
-    def _build_sisyphus_group(self, body):
-        self._branch = _detect_branch()
-
-        group = Adw.PreferencesGroup()
-        group.set_title("Переход на Sisyphus")
-        group.set_header_suffix(self._make_branch_badge_label(self._branch))
-        body.append(group)
-
-        if self._branch == "sisyphus":
-            row = Adw.ActionRow()
-            row.set_title("Уже на Sisyphus")
-            row.set_subtitle("Система использует rolling release репозиторий")
-            row.add_prefix(make_icon("emblem-ok-symbolic"))
-            group.add(row)
-            return
-
-        self._add_info_row(
-            group,
-            "dialog-warning-symbolic",
-            "Переход необратим",
-            "Sisyphus — rolling release, пакеты обновляются каждый день. "
-            "Откат к стабильной ветке без переустановки системы невозможен.",
-            error_emphasis=True,
-        )
-
-        check_row = Adw.ActionRow()
-        check_row.set_title("Анализ обновлений")
-        check_row.set_subtitle("Переключает репозитории и симулирует dist-upgrade")
-        check_row.add_prefix(make_icon("system-search-symbolic"))
-        self._btn_check = make_button("Проверить", width=110)
-        self._btn_check.set_valign(Gtk.Align.CENTER)
-        self._btn_check.connect("clicked", self._on_check_clicked)
-        check_row.add_suffix(self._btn_check)
-        group.add(check_row)
-
-        self._result_row = Adw.ActionRow()
-        self._result_row.set_title("Результат")
-        self._result_row.set_visible(False)
-        group.add(self._result_row)
-
-        self._row_sisy_warn2 = Adw.ActionRow()
-        self._row_sisy_warn2.set_title("Это изменит всю систему")
-        self._row_sisy_warn2.set_subtitle(
-            "После обновления все пакеты перейдут на rolling release версии. "
-            "Убедись, что сделал резервную копию важных данных."
-        )
-        self._row_sisy_warn2.set_activatable(False)
-        w2 = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
-        w2.set_valign(Gtk.Align.CENTER)
-        self._row_sisy_warn2.add_prefix(w2)
-        self._row_sisy_warn2.set_visible(False)
-        group.add(self._row_sisy_warn2)
-
-        upgrade_row = Adw.ActionRow()
-        upgrade_row.set_title("Обновление до Sisyphus")
-        upgrade_row.set_subtitle("apt-get dist-upgrade по репозиторию Sisyphus")
-        upgrade_row.add_prefix(make_icon("system-software-update-symbolic"))
-        upgrade_row.set_visible(False)
-
-        btn_box = Gtk.Box(spacing=8)
-        btn_box.set_valign(Gtk.Align.CENTER)
-
-        self._btn_revert = make_button("Откатить репозитории", width=175)
-        self._btn_revert.connect("clicked", self._on_revert_clicked)
-        btn_box.append(self._btn_revert)
-
-        self._btn_upgrade = make_button("Обновить вопреки всему!", width=185)
-        self._btn_upgrade.add_css_class("destructive-action")
-        self._btn_upgrade.connect("clicked", self._on_upgrade_clicked)
-        btn_box.append(self._btn_upgrade)
-
-        upgrade_row.add_suffix(btn_box)
-        group.add(upgrade_row)
-        self._upgrade_row = upgrade_row
-
-    def _on_check_clicked(self, btn):
-        btn.set_sensitive(False)
-        btn.set_label("…")
-        win = self.get_root()
-        if win and hasattr(win, "start_progress"):
-            win.start_progress("Анализ обновлений Sisyphus...")
-        threading.Thread(target=self._do_check, daemon=True).start()
-
-    def _do_check(self):
-        self._log("\n▶  Переключаем репозитории на Sisyphus для анализа...\n")
-
-        backup_cmd = (
-            "mkdir -p /tmp/altbooster-repos-bak && "
-            "cp /etc/apt/sources.list.d/*.list /tmp/altbooster-repos-bak/"
-        )
-        ok = backend.run_privileged_sync(["bash", "-c", backup_cmd], self._log)
-        if not ok:
-            GLib.idle_add(self._check_done_error, "Ошибка резервного копирования репозиториев")
-            return
-
-        switch_cmd = (
-            r"sed -i 's/ p[0-9]*\/branch / Sisyphus /g' /etc/apt/sources.list.d/*.list"
-        )
-        ok = backend.run_privileged_sync(["bash", "-c", switch_cmd], self._log)
-        if not ok:
-            GLib.idle_add(self._check_done_error, "Ошибка переключения репозиториев")
-            return
-
-        self._log("▶  Обновляем индекс пакетов...\n")
-        ok = backend.run_privileged_sync(["apt-get", "update"], self._log)
-        if not ok:
-            GLib.idle_add(self._check_done_error, "Ошибка обновления индекса")
-            return
-
-        self._log("▶  Симуляция dist-upgrade...\n")
-        try:
-            result = subprocess.run(
-                ["apt-get", "--simulate", "dist-upgrade"],
-                capture_output=True, text=True,
-            )
-            output = result.stdout + result.stderr
-        except OSError as e:
-            GLib.idle_add(self._check_done_error, f"Ошибка симуляции: {e}")
-            return
-
-        pkg_count = sum(1 for line in output.splitlines() if line.startswith("Inst "))
-        size_str = ""
-        m = re.search(r"Need to get ([0-9 ,.]+(?:kB|MB|GB))", output)
-        if m:
-            size_str = f" · ~{m.group(1)}"
-
-        GLib.idle_add(self._check_done_ok, pkg_count, size_str)
-
-    def _check_done_error(self, msg):
-        self._btn_check.set_sensitive(True)
-        self._btn_check.set_label("Повтор")
-        self._log(f"✘  {msg}\n")
-        win = self.get_root()
-        if win and hasattr(win, "stop_progress"):
-            win.stop_progress(False)
-
-    def _check_done_ok(self, pkg_count, size_str):
-        self._result_row.set_title(f"{pkg_count} пакетов к обновлению{size_str}")
-        self._result_row.set_subtitle("Репозитории переключены на Sisyphus. Подтверди или откати.")
-        self._result_row.set_visible(True)
-        self._row_sisy_warn2.set_visible(True)
-        self._upgrade_row.set_visible(True)
-        self._btn_check.set_label("Обновлено")
-        self._log(f"✔  Анализ завершён: {pkg_count} пакетов{size_str}\n")
-        win = self.get_root()
-        if win and hasattr(win, "stop_progress"):
-            win.stop_progress(True)
-
-    def _on_revert_clicked(self, btn):
-        btn.set_sensitive(False)
-        self._btn_upgrade.set_sensitive(False)
-        win = self.get_root()
-        if win and hasattr(win, "start_progress"):
-            win.start_progress("Откат репозиториев...")
-
-        revert_cmd = (
-            "cp /tmp/altbooster-repos-bak/*.list /etc/apt/sources.list.d/ && "
-            "rm -rf /tmp/altbooster-repos-bak && "
-            "apt-get update"
-        )
-
-        def _on_done(ok):
-            self._log("✔  Репозитории откачены\n" if ok else "✘  Ошибка отката\n")
-            self._upgrade_row.set_visible(False)
-            self._row_sisy_warn2.set_visible(False)
-            self._result_row.set_visible(False)
-            self._btn_check.set_label("Проверить")
-            self._btn_check.set_sensitive(True)
-            if win and hasattr(win, "stop_progress"):
-                win.stop_progress(ok)
-
-        backend.run_privileged(["bash", "-c", revert_cmd], self._log, _on_done)
-
-    def _on_upgrade_clicked(self, btn):
-        btn.set_sensitive(False)
-        self._btn_revert.set_sensitive(False)
-        self._log("\n▶  Запуск dist-upgrade до Sisyphus...\n")
-        win = self.get_root()
-        if win and hasattr(win, "start_progress"):
-            win.start_progress("Обновление системы до Sisyphus...")
-
-        def _on_done(ok):
-            if ok:
-                self._log("✔  Система обновлена до Sisyphus!\n")
-                self._result_row.set_subtitle("Обновление завершено успешно.")
-            else:
-                self._log("✘  Ошибка обновления\n")
-                btn.set_sensitive(True)
-                self._btn_revert.set_sensitive(True)
-            if win and hasattr(win, "stop_progress"):
-                win.stop_progress(ok)
-
-        backend.run_privileged(
-            ["apt-get", "dist-upgrade", "-y"],
-            self._log, _on_done,
-        )
-
     def _build_scx_ui(self, body):
-        is_sis = _is_sisyphus()
         group = Adw.PreferencesGroup()
         group.set_title("Планировщик AMD Ryzen (SCX LAVD)")
         group.set_header_suffix(self._experimental_header_badge())
@@ -554,13 +229,9 @@ class TweaksPage(Gtk.Box):
             "LAVD (Latency-aware Virtual Deadline) — планировщик из линейки sched-ext "
             "(Igalia, Valve): переводит задачи на «виртуальные дедлайны», чтобы снизить "
             "задержки в играх и при скачках нагрузки на рабочем столе.\n\n"
-            "Чтобы включить LAVD, нужны одновременно пакет scx-scheds из Sisyphus и уже "
+            "Чтобы включить LAVD, нужен пакет scx-scheds из репозиториев Fedora и уже "
             "загруженное ядро с каталогом /sys/kernel/sched_ext. Подготовку ядра выполняют "
-            "в блоке «Поддержка sched_ext в ядре» на подвкладке «Планировщик ядра». "
-            "Заголовок группы отражает типичный сценарий для Ryzen; на других x86_64 LAVD "
-            "допустим при той же связке ядра и пакета.",
-            sisyphus_only_badge=not is_sis,
-            sisyphus_only_tooltip="Пакет scx-scheds доступен только в репозитории Sisyphus.",
+            "в блоке «Поддержка sched_ext в ядре» на подвкладке «Планировщик ядра».",
         )
         self._search_focus_widgets["scx"] = scx_intro
 
@@ -621,7 +292,7 @@ class TweaksPage(Gtk.Box):
 
             if not self._check_scx_installed():
                 GLib.idle_add(self._log, "▶  Установка пакета scx-scheds...\n")
-                ok_inst = backend.run_privileged_sync(["apt-get", "install", "-y", "scx-scheds"], self._log)
+                ok_inst = backend.run_privileged_sync(["dnf", "install", "-y", "scx-scheds"], self._log)
                 if not ok_inst:
                     GLib.idle_add(self._log, "✘  Ошибка установки пакета scx-scheds\n")
                     GLib.idle_add(row.set_done, False)
@@ -702,7 +373,6 @@ WantedBy=multi-user.target
         )
 
     def _build_ananicy_group(self, body):
-        is_sis = _is_sisyphus()
         group = Adw.PreferencesGroup()
         group.set_title("Современный планировщик для Linux (от CachyOS)")
         body.append(group)
@@ -714,8 +384,6 @@ WantedBy=multi-user.target
             "Автоматически управляет приоритетами процессов по правилам. "
             "Правила CachyOS охватывают браузеры, Steam и игровые процессы — "
             "системный планировщик получает подсказки о важности каждого процесса.",
-            sisyphus_only_badge=not is_sis,
-            sisyphus_only_tooltip="Пакет ananicy-cpp доступен только в репозитории Sisyphus.",
         )
         self._search_focus_widgets["ananicy"] = an_intro
 
@@ -732,14 +400,11 @@ WantedBy=multi-user.target
             undo_label="Удалить",
             undo_icon="user-trash-symbolic",
             help_text=(
-                "Устанавливает ananicy-cpp через epm и клонирует правила CachyOS "
+                "Устанавливает ananicy-cpp через dnf и клонирует правила CachyOS "
                 f"в {_ANANICY_RULES_DIR}. Правила включают Steam и дочерние процессы."
             ),
         )
         group.add(self._row_ananicy_install)
-        if not is_sis:
-            self._row_ananicy_install.set_sensitive(False)
-            self._row_ananicy_install.set_tooltip_text("Требуется репозиторий Sisyphus")
 
         self._row_ananicy_service = SettingRow(
             "media-playback-start-symbolic",
@@ -756,9 +421,6 @@ WantedBy=multi-user.target
             help_text="Запускает ananicy-cpp при каждой загрузке системы через systemd.",
         )
         group.add(self._row_ananicy_service)
-        if not is_sis:
-            self._row_ananicy_service.set_sensitive(False)
-            self._row_ananicy_service.set_tooltip_text("Требуется репозиторий Sisyphus")
 
     def _check_ananicy_service(self):
         try:
@@ -779,7 +441,7 @@ WantedBy=multi-user.target
 
         def _thread():
             ok = backend.run_privileged_sync(
-                ["epm", "install", "-y", "ananicy-cpp", "git"],
+                ["dnf", "install", "-y", "ananicy-cpp", "git"],
                 self._log,
             )
             if ok:
@@ -814,7 +476,7 @@ WantedBy=multi-user.target
         cmd = [
             "bash", "-c",
             f"systemctl disable --now ananicy-cpp 2>/dev/null || true; "
-            f"epm remove -y ananicy-cpp; "
+            f"dnf remove -y ananicy-cpp; "
             f"rm -rf {shlex.quote(_ANANICY_RULES_DIR)}",
         ]
 
