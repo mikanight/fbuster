@@ -60,14 +60,12 @@
 ## Установка
 
 ```bash
-# Из PyPI
-pip install fedorabooster
-
 # Из GitHub
 git clone https://github.com/mikanight/fbuster.git
 cd fbuster
 ./install.sh
 ```
+Скоро соберу пакет.
 
 ## Запуск
 
