@@ -118,17 +118,17 @@ def start_pkexec_shell() -> tuple[bool, bool]:
         return False, is_cancel
 
 
-def _is_apt_locked() -> bool:
-    for lock_file in config.APT_LOCK_FILES:
+def _is_dnf_locked() -> bool:
+    for lock_file in config.DNF_LOCK_FILES:
         if not os.path.exists(lock_file):
             continue
         if subprocess.run(["fuser", lock_file], capture_output=True, timeout=5).returncode == 0:
             return True
     return False
 
-def _wait_for_apt_lock(on_line: OnLine | None = None, timeout: int = 60) -> bool:
+def _wait_for_dnf_lock(on_line: OnLine | None = None, timeout: int = 60) -> bool:
     for attempt in range(timeout // 5):
-        if not _is_apt_locked():
+        if not _is_dnf_locked():
             return True
         if on_line:
             if attempt == 0:
@@ -177,19 +177,6 @@ def _apt_dedup_filter(on_line: OnLine) -> OnLine:
     return _filtered
 
 
-def _wrap_epm_auto_install(cmd: Sequence[str]) -> Sequence[str]:
-    if not cmd or cmd[0] not in ("epm", "epmi"):
-        return cmd
-
-    script = (
-        "if ! rpm -q eepm >/dev/null 2>&1; then "
-        "echo -e '▶ EPM не найден. Выполняется установка eepm...\\n'; "
-        "export DEBIAN_FRONTEND=noninteractive; "
-        "apt-get install -y eepm; "
-        "fi && stdbuf -oL \"$@\""
-    )
-    return ["bash", "-c", script, "--", *cmd]
-
 def _run_pkexec(cmd: Sequence[str], on_line: OnLine | None, on_done: OnDone) -> None:
     def _emit(line: str) -> None:
         if on_line is not None:
@@ -198,13 +185,13 @@ def _run_pkexec(cmd: Sequence[str], on_line: OnLine | None, on_done: OnDone) -> 
     def _worker() -> None:
         check_lock = False
         if cmd:
-            if cmd[0] in ("apt", "apt-get", "flatpak", "epm", "epmi"):
+            if cmd[0] in ("apt", "apt-get", "flatpak", "dnf", "dnf5"):
                 check_lock = True
             elif cmd[0] == "bash" and len(cmd) >= 3:
-                if "apt-get" in cmd[2] or "epm" in cmd[2] or "flatpak" in cmd[2]:
+                if "apt-get" in cmd[2] or "dnf" in cmd[2] or "flatpak" in cmd[2]:
                     check_lock = True
         if check_lock:
-            _wait_for_apt_lock(on_line)
+            _wait_for_dnf_lock(on_line)
 
         with _pkexec_shell_lock:
             proc = _get_pkexec_shell()
@@ -273,8 +260,8 @@ def run_privileged_sync(cmd: Sequence[str], on_line: OnLine | None) -> bool:
     event.wait()
     return result
 
-def run_epm_sync(cmd: Sequence[str], on_line: OnLine) -> bool:
-    """См. run_privileged_sync — синхронная обёртка над run_epm."""
+def run_dnf_sync(cmd: Sequence[str], on_line: OnLine) -> bool:
+    """Синхронная обёртка над run_dnf."""
     event = threading.Event()
     result = False
 
@@ -283,11 +270,13 @@ def run_epm_sync(cmd: Sequence[str], on_line: OnLine) -> bool:
         result = ok
         event.set()
 
-    run_epm(cmd, on_line, _done)
+    run_dnf(cmd, on_line, _done)
     event.wait()
     return result
 
-def run_epm(cmd: Sequence[str], on_line: OnLine, on_done: OnDone) -> None:
-    cmd = _wrap_epm_auto_install(cmd)
-    on_line = _apt_dedup_filter(on_line)
-    _run_pkexec(cmd, on_line, on_done)
+def run_dnf(cmd: Sequence[str], on_line: OnLine, on_done: OnDone) -> None:
+    """Установка/удаление пакетов через dnf с авто-снятием DNF-блокировки."""
+    run_privileged(cmd, on_line, on_done)
+
+run_epm_sync = run_privileged_sync
+run_epm = run_privileged

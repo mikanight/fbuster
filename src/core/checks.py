@@ -6,7 +6,6 @@ import subprocess
 import threading
 from pathlib import Path
 
-from .privileges import run_privileged_sync
 from .gsettings import gsettings_get
 from core import config
 
@@ -96,11 +95,14 @@ def _eval_check_pair(kind: str, value) -> bool:
 
 
 def is_sudo_enabled() -> bool:
-    control = shutil.which("control") or "/usr/sbin/control"
-    lines: list[str] = []
-    run_privileged_sync([control, "sudowheel"], lambda line: lines.append(line))
-    out = "".join(lines).lower()
-    return "enabled" in out or "wheelonly" in out
+    try:
+        result = subprocess.run(
+            ["groups", os.environ.get("SUDO_USER", os.environ.get("USER", ""))],
+            capture_output=True, text=True, timeout=5,
+        )
+        return "wheel" in result.stdout.lower()
+    except (subprocess.TimeoutExpired, OSError):
+        return False
 
 
 def is_flathub_enabled() -> bool:
@@ -130,7 +132,7 @@ def is_system_busy() -> bool:
     try:
         if subprocess.run(["pgrep", "-f", "packagekitd"], capture_output=True, timeout=5).returncode == 0:
             return True
-        for lock_file in config.APT_LOCK_FILES:
+        for lock_file in config.DNF_LOCK_FILES:
             if os.path.exists(lock_file) and subprocess.run(["fuser", lock_file], capture_output=True, timeout=5).returncode == 0:
                 return True
     except (OSError, subprocess.TimeoutExpired):
@@ -238,7 +240,4 @@ def is_fairlight_installed() -> bool:
 
 
 def is_epm_installed() -> bool:
-    try:
-        return subprocess.run(["rpm", "-q", "eepm"], capture_output=True, timeout=10).returncode == 0
-    except (subprocess.TimeoutExpired, OSError):
-        return False
+    return False

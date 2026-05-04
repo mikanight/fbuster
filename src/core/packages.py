@@ -38,14 +38,16 @@ def _detect_source_type(cmd: list[str]) -> str:
         return "script"
     if cmd[0] == "flatpak":
         return "flatpak"
-    if cmd[0] == "epm" and len(cmd) > 1 and cmd[1] == "play":
-        return "epm_play"
     if cmd[0] == "bash":
         return "script"
-    return "apt"
+    if cmd[0] in ("dnf", "dnf5"):
+        return "dnf"
+    if cmd[0] in ("apt", "apt-get", "epm"):
+        return "apt"
+    return "script"
 
 
-def _parse_apt_simulate_output(
+def _parse_dnf_output(
     lines: list[str],
     source_type: str,
     package_names: list[str],
@@ -58,72 +60,129 @@ def _parse_apt_simulate_output(
     )
 
     section: str | None = None
+    _PACKAGE_LINE_RE = re.compile(r"^\s\S")
 
     for line in lines:
         stripped = line.strip()
 
         if any(x in line for x in (
-            "The following NEW packages will be installed",
-            "Следующие НОВЫЕ пакеты будут установлены",
+            "Установка:", "Installing:", "Установка зависимостей:", "Installing dependencies:",
         )):
             section = "new"
             continue
         if any(x in line for x in (
-            "The following packages will be upgraded",
-            "Следующие пакеты будут ОБНОВЛЕНЫ",
-            "будут обновлены",
+            "Обновление:", "Upgrading:", "Замена:", "Replacing:",
         )):
             section = "upgrade"
             continue
         if any(x in line for x in (
-            "The following packages will be REMOVED",
-            "Следующие пакеты будут УДАЛЕНЫ",
-            "будут удалены",
+            "Удаление:", "Removing:", "Удаление зависимостей:", "Removing dependent packages:",
         )):
             section = "removed"
             continue
-        if any(x in line for x in (
-            "The following packages have been kept back",
-            "The following packages will be kept",
-            "Следующие пакеты будут СОХРАНЕНЫ",
-        )):
-            section = "kept"
-            continue
-        if line.startswith("The following") or line.startswith("0 upgraded"):
-            section = None
 
-        if section and line.startswith(" ") and stripped:
-            pkgs = [re.sub(r"[#=].*$", "", p) for p in stripped.split()]
-            pkgs = [p for p in pkgs if p]
-            if section == "new":
-                preview.new_packages.extend(pkgs)
-            elif section == "upgrade":
-                preview.upgraded_packages.extend(pkgs)
-            elif section == "removed":
-                preview.removed_packages.extend(pkgs)
-            elif section == "kept":
-                preview.kept_packages.extend(pkgs)
+        if "Transaction Summary" in line or "Сводка транзакции" in line:
+            section = None
             continue
 
         m = re.search(
-            r"(?:Need to get|Необходимо получить)\s+([^\s]+(?:\s+[^\s]+)?)\s+(?:of archives|архивов)",
+            r"(?:Total download size|Общий размер загрузок)[:]\s*(.+)",
             line,
         )
         if m:
             preview.download_size = m.group(1).strip()
 
         m = re.search(
-            r"(?:After this operation,?\s+|После распаковки потребуется дополнительно\s+)"
-            r"([^\s]+(?:\s+[^\s]+)?)\s+(?:of additional|дискового)",
+            r"(?:Installed size|Размер установки)[:]\s*(.+)",
             line,
         )
         if m:
             preview.disk_space = m.group(1).strip()
 
+        if section and _PACKAGE_LINE_RE.match(line):
+            parts = stripped.split()
+            if parts:
+                pkg_name = parts[0]
+                if section == "new":
+                    preview.new_packages.append(pkg_name)
+                elif section == "upgrade":
+                    preview.upgraded_packages.append(pkg_name)
+                elif section == "removed":
+                    preview.removed_packages.append(pkg_name)
+            continue
+
+    if not preview.new_packages and not preview.upgraded_packages and not preview.removed_packages:
+        section = None
+        for line in lines:
+            stripped = line.strip()
+            if any(x in line for x in (
+                "The following NEW packages will be installed",
+                "Следующие НОВЫЕ пакеты будут установлены",
+            )):
+                section = "new"
+                continue
+            if any(x in line for x in (
+                "The following packages will be upgraded",
+                "Следующие пакеты будут ОБНОВЛЕНЫ",
+                "будут обновлены",
+            )):
+                section = "upgrade"
+                continue
+            if any(x in line for x in (
+                "The following packages will be REMOVED",
+                "Следующие пакеты будут УДАЛЕНЫ",
+                "будут удалены",
+            )):
+                section = "removed"
+                continue
+            if any(x in line for x in (
+                "The following packages have been kept back",
+                "The following packages will be kept",
+                "Следующие пакеты будут СОХРАНЕНЫ",
+            )):
+                section = "kept"
+                continue
+            if line.startswith("The following") or line.startswith("0 upgraded"):
+                section = None
+
+            if section and line.startswith(" ") and stripped:
+                pkgs = [re.sub(r"[#=].*$", "", p) for p in stripped.split()]
+                pkgs = [p for p in pkgs if p]
+                if section == "new":
+                    preview.new_packages.extend(pkgs)
+                elif section == "upgrade":
+                    preview.upgraded_packages.extend(pkgs)
+                elif section == "removed":
+                    preview.removed_packages.extend(pkgs)
+                elif section == "kept":
+                    preview.kept_packages.extend(pkgs)
+                continue
+        if not preview.download_size:
+            for line in lines:
+                m = re.search(
+                    r"(?:Need to get|Необходимо получить)\s+([^\s]+(?:\s+[^\s]+)?)\s+(?:of archives|архивов)",
+                    line,
+                )
+                if m:
+                    preview.download_size = m.group(1).strip()
+                m = re.search(
+                    r"(?:After this operation,?\s+|После распаковки потребуется дополнительно\s+)"
+                    r"([^\s]+(?:\s+[^\s]+)?)\s+(?:of additional|дискового)",
+                    line,
+                )
+                if m:
+                    preview.disk_space = m.group(1).strip()
+
+    for line in lines:
+        stripped = line.strip()
         if stripped.startswith("E:"):
             preview.errors.append(stripped[2:].strip())
         elif stripped.startswith("W:"):
             preview.warnings.append(stripped[2:].strip())
+        elif "Error:" in line and not preview.errors:
+            err_part = line.split("Error:", 1)[1].strip()
+            if err_part:
+                preview.errors.append(err_part)
 
     return preview
 
@@ -201,30 +260,6 @@ def _get_flatpak_info(cmd: list[str]) -> InstallPreview:
     return preview
 
 
-def _get_epm_play_info(cmd: list[str]) -> InstallPreview:
-    pkg_names = _extract_pkg_names(cmd)
-    preview = InstallPreview(source_type="epm_play", package_names=pkg_names)
-
-    if not pkg_names:
-        return preview
-
-    pkg = pkg_names[0]
-    try:
-        r = subprocess.run(
-            ["epm", "play", "--info", pkg],
-            capture_output=True, text=True, encoding="utf-8", timeout=8,
-        )
-        for line in (r.stdout + r.stderr).splitlines():
-            if line.lower().startswith("url:"):
-                preview.app_url = line.split(":", 1)[1].strip()
-                break
-    except Exception:
-        pass
-
-    preview.new_packages = [pkg]
-    return preview
-
-
 def get_install_preview(
     cmd: list[str],
     runner: PrivilegedRunner | None = None,
@@ -233,23 +268,19 @@ def get_install_preview(
 
     if source_type == "flatpak":
         return _get_flatpak_info(cmd)
-    if source_type == "epm_play":
-        return _get_epm_play_info(cmd)
     if source_type == "script":
         return InstallPreview(source_type="script", package_names=_extract_pkg_names(cmd))
 
     package_names = _extract_pkg_names(cmd)
 
     is_dist_upgrade = (
-        len(cmd) > 1 and cmd[1] in ("dist-upgrade", "full-upgrade", "upgrade")
-    ) or (
-        cmd[0] == "epm" and len(cmd) > 1 and cmd[1] in ("full-upgrade", "upgrade")
+        len(cmd) > 1 and cmd[1] in ("dist-upgrade", "full-upgrade", "upgrade", "distro-sync", "upgrade-minimal")
     )
 
     if is_dist_upgrade:
-        dry_cmd = ["env", "LC_ALL=C", "apt-get", "-s", "dist-upgrade"]
+        dry_cmd = ["dnf", "upgrade", "--assumeno"]
     elif package_names:
-        dry_cmd = ["env", "LC_ALL=C", "apt-get", "-s", "install"] + package_names
+        dry_cmd = ["dnf", "install", "--assumeno"] + package_names
     else:
         return InstallPreview(
             source_type=source_type, dry_run_failed=True, package_names=package_names
@@ -268,16 +299,16 @@ def get_install_preview(
         env = {"LC_ALL": "C", "PATH": "/usr/bin:/bin:/usr/sbin:/sbin"}
         try:
             r = subprocess.run(
-                dry_cmd[1:],
+                dry_cmd,
                 capture_output=True, text=True, encoding="utf-8",
-                timeout=15, env=env,
+                timeout=60, env=env,
             )
             lines = (r.stdout + r.stderr).splitlines(keepends=True)
             failed = r.returncode != 0
         except Exception:
             failed = True
 
-    preview = _parse_apt_simulate_output(lines, source_type, package_names, failed)
+    preview = _parse_dnf_output(lines, source_type, package_names, failed)
 
     if is_dist_upgrade:
         preview.flatpak_updates = get_flatpak_system_updates()

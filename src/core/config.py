@@ -36,10 +36,8 @@ DV_PROXY_DEFAULT = ""
 GSETTINGS_MUTTER      = "org.gnome.mutter"
 GSETTINGS_KEYBINDINGS = "org.gnome.desktop.wm.keybindings"
 
-APT_LOCK_FILES = [
-    "/var/cache/apt/archives/lock",
-    "/var/lib/dpkg/lock-frontend",
-    "/var/lib/apt/lists/lock",
+DNF_LOCK_FILES = [
+    "/var/run/dnf.pid",
 ]
 
 _state: dict = {}

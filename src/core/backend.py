@@ -10,6 +10,8 @@ from core.privileges import (
     run_privileged_sync,
     run_epm,
     run_epm_sync,
+    run_dnf,
+    run_dnf_sync,
     cancel_current,
     OnLine,
     OnDone,
@@ -27,7 +29,6 @@ from core.checks import (
     is_davinci_installed,
     is_aac_installed,
     is_fairlight_installed,
-    is_epm_installed,
 )
 from core.tweaks import (
     apply_vm_dirty,
