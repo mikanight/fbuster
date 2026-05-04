@@ -1,102 +1,91 @@
 <div align="center">
 
-<img src="icons/altbooster.png" width="120" alt="ALT Booster Logo"/>
+<img src="icons/altbooster.png" width="120" alt="Fedora Booster Logo"/>
 
-# ALT Booster
+# Fedora Booster
 
-Умная утилита для тонкой настройки и обслуживания ALT Linux. Создана с фокусом на безопасность, надёжность и современный интерфейс на GTK4/Adwaita.
+Утилита для тонкой настройки и обслуживания Fedora Linux. Форк [ALT Booster](https://github.com/plafonlinux/altbooster), адаптированный под Fedora Workstation (GNOME). Интерфейс на GTK4/Adwaita.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-ALT%20Linux-informational)](https://altlinux.org)
-[![ALT Linux Sisyphus](https://img.shields.io/badge/ALT_Linux-Sisyphus-yellow)](https://packages.altlinux.org/ru/sisyphus/srpms/plafon-altbooster/)
+[![Platform](https://img.shields.io/badge/platform-Fedora%20Linux-blue)](https://fedoraproject.org)
 [![GTK](https://img.shields.io/badge/GTK-4.0-green)](https://gtk.org)
 [![Python](https://img.shields.io/badge/Python-3.11+-yellow)](https://python.org)
+[![Tests](https://img.shields.io/badge/tests-345%20passed-brightgreen)]()
 
 </div>
 
 <div align="center">
-  <img src="previewb.png" alt="Интерфейс ALT Booster" width="800">
+  <img src="previewb.png" alt="Интерфейс Fedora Booster" width="800">
 </div>
 
 ---
 
 ## О проекте
 
-**ALT Booster** — это нативное GTK4-приложение для тонкой настройки и обслуживания ALT Linux, спроектированное с акцентом на **безопасность, надёжность и удобство**.
+**Fedora Booster** — форк [ALT Booster](https://github.com/plafonlinux/altbooster), переработанный для Fedora Linux. Оригинальный проект создан [PLAFON](https://github.com/plafonlinux) для ALT Linux. Данный форк адаптирует пакетный менеджер (apt/EPM → DNF), каталоги приложений, расширения GNOME и системные твики под экосистему Fedora.
 
-В отличие от простых скриптов, ALT Booster предлагает:
-- **Безопасное выполнение команд:** Изолированное и безопасное повышение привилегий через `sudo` с опциональной интеграцией со связкой ключей GNOME.
-- **Отзывчивый интерфейс:** Все длительные операции выполняются в фоновом потоке, не замораживая приложение.
-- **Умное решение проблем:** Утилита автоматически решает распространённые проблемы, такие как установка недостающих зависимостей или обновление кэша пакетов при ошибках.
-- **Надёжность:** Продуманные проверки (например, поиск зависимостей перед удалением пакета) защищают систему от случайных поломок.
+- **Пакетный менеджер:** DNF/DNF5 вместо apt-get/EPM
+- **Приложения:** Flatpak + DNF + GitHub (без EPM)
+- **Расширения GNOME:** каталог из 20 расширений (e.g.o. + GitHub)
+- **Системные твики:** адаптированы под Fedora (systemd, journald, fstrim, Btrfs)
+- **Безопасность:** все привилегированные операции через pkexec + PolicyKit
 
 ## Ключевые возможности
 
-### Интеллектуальная установка и настройка
-- **Умный менеджер приложений:** Установка ПО из Flathub и EPM. При возникновении ошибок 404 (устаревшие индексы) утилита автоматически выполнит `apt-get update` и повторит установку.
-- **Менеджер расширений GNOME:** Поиск, установка и управление расширениями. Если зависимость `gext` не найдена, ALT Booster предложит и выполнит её автоматическую установку для пользователя.
-- **Безопасное удаление:** При удалении системных расширений GNOME, упакованных в RPM, утилита сперва проверяет наличие обратных зависимостей, чтобы предотвратить поломку системы.
-- **Контекстно-зависимый UI:** Задачи для Btrfs автоматически скрываются, если система не использует эту файловую систему.
+### Установка и настройка
+- **Менеджер приложений:** каталог из 50+ приложений (Flatpak, DNF, GitHub)
+- **Расширения GNOME:** установка по ID с extensions.gnome.org и из GitHub
+- **Умный предпросмотр:** перед установкой показывается список пакетов, размер загрузки
+- **Автоисправление ошибок:** при 404 (устаревшие индексы) выполняет `dnf makecache` и повторяет установку
+- **Data-Driven UI:** большая часть интерфейса генерируется из JSON-файлов
 
-### Безопасность и надёжность
-- **Повышение привилегий:** Операции с правами root выполняются через `pkexec` и изолированную root-сессию оболочки (запрос пароля через PolicyKit). Отдельные сценарии могут использовать `sudo`/`SUDO_ASKPASS`, если они настроены в системе.
-- **Интеграция с Keyring:** Опциональная возможность безопасно сохранить пароль `sudo` в системной связке ключей (GNOME Keyring) через `libsecret`.
-- **Защита от случайных действий:** Задача очистки кэша имеет встроенную защиту от удаления важных директорий (таких как `/` или `~`), а все пути экранируются для предотвращения инъекций.
-- **Атомарная запись:** Конфигурационные файлы сохраняются атомарно (запись во временный файл с последующим переименованием), что защищает их от повреждения в случае сбоя.
+### Система
+- **Начало:** автообновление GNOME Software, TRIM (fstrim.timer), лимиты journald, дробное масштабирование
+- **Раскладки клавиатуры:** Alt+Shift, CapsLock, Ctrl+Shift, Win+Space с возможностью отката
+- **Nautilus:** настройка сортировки папок, кэш копирования (vm.dirty), Sushi, f3d, иконки Papirus
+- **Обслуживание:** очистка DNF/Flatpak, Btrfs scrub/balance, SSD TRIM
+- **Твики:** GNOME Shell патчи, приоритеты процессов, sched_ext
 
-### Продвинутый пользовательский опыт
-- **Data-Driven UI:** Большая часть интерфейса (задачи обслуживания, каталог приложений) генерируется на основе JSON-файлов, что делает добавление нового функционала простым и быстрым.
-- **Отзывчивый интерфейс:** Все длительные операции выполняются в фоновых потоках, а пользователю предоставляется наглядная обратная связь через индикаторы прогресса и логи.
-- **Самообновление:** Приложение умеет проверять наличие новых версий на GitHub и выполнять обновление (через `git pull` или скачивая архив).
+### Резервное копирование
+- **TimeSync:** бэкапы через BorgBackup
+- **Зеркало:** клонирование системы на внешний диск (Btrfs send/receive)
+- **Метаданные:** сохранение списка пакетов, Flatpak-приложений, dconf
+
+### AMD / Intel
+- **AMD Radeon:** разгон, управление через LACT
+- **Intel:** sched_ext планировщик (scx_meteor)
 
 ## Требования
 
-- ALT Linux (Sisyphus / p10 / p11)
+- Fedora Linux (GNOME)
 - Python 3.11+
 - GTK 4.0 + libadwaita
-- GNOME или совместимый Wayland DE
 - git
 
 ## Установка
 
-### 1. Установка из GitHub (рекомендуется, самая свежая версия)
-
-#### 1.1 Установите git
+### Из PyPI
 
 ```bash
-su - -c 'apt-get install git'
+pip install fedorabooster
 ```
 
-#### 1.2 Клонировать и установить
+### Из GitHub
 
 ```bash
-git clone https://github.com/plafonlinux/altbooster.git
-cd altbooster
+git clone https://github.com/mikanight/fbuster.git
+cd fbuster
 ./install.sh
 ```
 
-### 2. Установка из репозитория ALT Linux (альтернатива)
-
-<p><em>Примечание:</em> версия в репозитории может отставать от GitHub-релиза.</p>
-
-#### Вариант A: через apt-get
+### Запуск
 
 ```bash
-sudo apt-get update && sudo apt-get install plafon-altbooster
-```
-
-#### Вариант B: через EPM
-
-```bash
-epmi plafon-altbooster
-```
-
-### 3. Запустить
-
-```bash
-altbooster
+fedorabooster
 # или через меню приложений GNOME
 ```
+
+Флаги: `-s` (Начало), `-a` (Приложения), `-e` (Расширения), `-f` (Твики), `-t` (TimeSync), `-m` (Обслуживание), `--debug`.
 
 ### Удаление
 
@@ -107,59 +96,79 @@ altbooster
 ## Структура проекта
 
 ```
-altbooster/
-├── icons/                     # Графические ресурсы (иконки .svg, .png)
-│   ├── altbooster.svg/.png    # Иконка приложения
-│   └── hicolor/               # Иконки для системных тем GTK
-├── src/                       # Исходный код приложения
-│   ├── altbooster.py          # Точка входа в приложение
-│   ├── core/                  # Бэкенд-модули для взаимодействия с системой
-│   │   ├── backend.py         # Фасад, агрегирующий API всего бэкенда
-│   │   ├── borg.py            # Операции BorgBackup (низкоуровневые)
-│   │   ├── btrfs.py           # Снэпшоты и операции Btrfs
-│   │   ├── checks.py          # Функции проверки состояния системы
-│   │   ├── config.py          # Пути, версия, state.json, константы
-│   │   ├── gsettings.py       # Обёртки для gsettings/dconf
-│   │   ├── packages.py        # Логика epm и flatpak
-│   │   ├── privileges.py      # Безопасное выполнение команд через sudo/pkexec
-│   │   └── tweaks.py          # Реализация конкретных системных твиков
-│   ├── modules/               # JSON-файлы, описывающие UI для Data-Driven страниц
-│   ├── tabs/                  # Модули вкладок приложения
-│   │   ├── amd.py             # Вкладка «AMD»
-│   │   ├── amd_actions.py     # Действия для AMD-страницы
-│   │   ├── apps.py            # Вкладка «Приложения»
-│   │   ├── davinci.py         # Вкладка «DaVinci Resolve»
-│   │   ├── extensions.py      # Вкладка «Расширения GNOME»
-│   │   ├── flatpak.py         # Вкладка «Flatpak»
-│   │   ├── intel.py           # Вкладка «Intel» (scx_meteor)
-│   │   ├── maintenance.py     # Вкладка «Обслуживание»
-│   │   ├── setup.py           # Вкладка «Начало»
-│   │   ├── terminal.py        # Вкладка «Терминал»
-│   │   ├── terminal_actions.py# Действия для терминальной страницы
-│   │   └── timesync/          # Вкладка «Резервная копия» (Time Machine / BorgBackup)
-│   │       ├── page.py        # Главная страница вкладки (UI вызывает core через backend)
-│   │       ├── mirror.py      # Режим «Зеркало»
-│   │       ├── manual.py      # Ручной режим и встроенный терминал
-│   │       ├── restore.py     # Восстановление из резервной копии
-│   │       ├── pickers.py     # Диалоги выбора файлов/директорий
-│   │       └── summary.py     # Сводный диалог после операций
-│   └── ui/                    # Переиспользуемые UI-компоненты
-│       ├── common.py          # Общие вспомогательные функции UI
-│       ├── dialogs.py         # Кастомные диалоговые окна (пароль, редактор)
-│       ├── dynamic_page.py    # Движок, генерирующий UI на основе JSON
-│       ├── install_preview_dialog.py # Диалог предпросмотра установки
-│       ├── rows.py            # Переиспользуемые Adw.ActionRow / Adw.ExpanderRow
-│       ├── widgets.py         # Фабрики стандартных виджетов Adwaita/GTK
-│       └── window.py          # AltBoosterWindow: layout, аутентификация, логи
-├── install.sh                 # Скрипт установки
-├── uninstall.sh               # Скрипт удаления
-├── Makefile                   # Сборка и установка через make
-├── pyproject.toml             # Метаданные проекта и зависимости (PEP 621)
-├── CHANGELOG.md               # История изменений
-├── CONTRIBUTING.md            # Руководство для участников
-└── README.md                  # Этот файл
+fedorabooster/
+├── icons/                     # Иконки (.svg, .png)
+├── src/                       # Исходный код
+│   ├── altbooster.py          # Точка входа
+│   ├── core/                  # Бэкенд: система, пакеты, Borg, Btrfs
+│   │   ├── backend.py         # Фасад (реэкспорт API)
+│   │   ├── borg.py            # BorgBackup
+│   │   ├── btrfs.py           # Btrfs: снапшоты, subvolume
+│   │   ├── checks.py          # Проверки состояния системы
+│   │   ├── config.py          # Версия, пути, состояние
+│   │   ├── gsettings.py       # Обёртки gsettings/dconf
+│   │   ├── mirror.py          # Зеркалирование системы
+│   │   ├── packages.py        # DNF/Flatpak: установка, предпросмотр
+│   │   ├── privileges.py      # pkexec, DNF-блокировки
+│   │   ├── sched_ext.py       # sched_ext
+│   │   └── tweaks.py          # Системные твики
+│   ├── modules/               # JSON-описания для Data-Driven UI
+│   ├── tabs/                  # Вкладки приложения
+│   │   ├── setup.py           # «Начало»
+│   │   ├── apps.py            # «Приложения»
+│   │   ├── extensions.py      # «Расширения GNOME»
+│   │   ├── flatpak.py         # «Flatpak»
+│   │   ├── terminal.py        # «Терминал»
+│   │   ├── amd.py             # «AMD Radeon»
+│   │   ├── intel.py           # «Intel»
+│   │   ├── davinci.py         # «DaVinci Resolve»
+│   │   ├── maintenance.py     # «Обслуживание»
+│   │   ├── tweaks.py          # «Твики»
+│   │   └── timesync/          # «TimeSync» (BorgBackup)
+│   └── ui/                    # UI-компоненты
+│       ├── window.py          # Главное окно
+│       ├── rows.py            # ActionRow/ExpanderRow
+│       ├── dynamic_page.py    # Data-Driven движок
+│       ├── style.css          # GTK-стили
+│       └── ...
+├── tests/                     # Тесты (345)
+├── install.sh / uninstall.sh  # Скрипты установки/удаления
+├── Makefile                   # make install
+├── pyproject.toml             # Метаданные, ruff
+└── README.md
+```
+
+## Отличия от ALT Booster
+
+| Оригинал (ALT Linux) | Форк (Fedora) |
+|---|---|
+| apt-get / EPM | DNF / DNF5 |
+| `apt-get update` | `dnf makecache` |
+| `epm -i` / `epm -e` | `dnf install` / `dnf remove` |
+| `update-grub` | `grub2-mkconfig` |
+| `usermod -aG wheel` | удалено (Fedora включает sudo из коробки) |
+| `nautilus-admin-gtk4` | удалено (нет в Fedora) |
+| `papirus-remix-icon-theme` | `papirus-icon-theme` |
+| `altbooster` (команда) | `fedorabooster` |
+| нет проверки is_system_busy | PackageKit + DNF lock |
+
+## Разработка
+
+```bash
+# Клонировать
+git clone https://github.com/mikanight/fbuster.git
+cd fbuster
+
+# Установить в dev-режиме
+pip install -e .
+
+# Запустить тесты
+pytest tests/ -q
+
+# Линтер
+ruff check src/ tests/
 ```
 
 ## Лицензия
 
-[MIT](LICENSE) © 2026 PLAFON
+[MIT](LICENSE) © 2026 [PLAFON](https://github.com/plafonlinux) (оригинал) · форк [mikanight](https://github.com/mikanight)
