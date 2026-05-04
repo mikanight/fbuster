@@ -2,7 +2,9 @@
 
 # Fedora Booster
 
-Утилита для тонкой настройки и обслуживания Fedora Linux. Форк [ALT Booster](https://github.com/plafonlinux/altbooster), адаптированный под Fedora Workstation (GNOME). Интерфейс на GTK4/Adwaita.
+Утилита для тонкой настройки и обслуживания Fedora Linux.
+
+Форк [ALT Booster](https://github.com/plafonlinux/altbooster), адаптированный под Fedora Workstation (GNOME). Интерфейс на GTK4/Adwaita.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Fedora%20Linux-blue)](https://fedoraproject.org)
@@ -10,43 +12,43 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-yellow)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-345%20passed-brightgreen)]()
 
+</div>
 
 ---
 
 ## О проекте
 
-**Fedora Booster** — форк [ALT Booster](https://github.com/plafonlinux/altbooster), переработанный для Fedora Linux. Оригинальный проект создан [PLAFON](https://github.com/plafonlinux) для ALT Linux. Данный форк адаптирует пакетный менеджер (apt/EPM → DNF), каталоги приложений, расширения GNOME и системные твики под экосистему Fedora.
+**Fedora Booster** — форк [ALT Booster](https://github.com/plafonlinux/altbooster) от [PLAFON](https://github.com/plafonlinux), адаптированный под Fedora Linux:
 
 - **Пакетный менеджер:** DNF/DNF5 вместо apt-get/EPM
-- **Приложения:** Flatpak + DNF + GitHub (без EPM)
-- **Расширения GNOME:** каталог из 20 расширений (e.g.o. + GitHub)
+- **Приложения:** каталог 50+ приложений (Flatpak, DNF, GitHub)
+- **Расширения GNOME:** каталог из 20 расширений (extensions.gnome.org + GitHub)
 - **Системные твики:** адаптированы под Fedora (systemd, journald, fstrim, Btrfs)
-- **Безопасность:** все привилегированные операции через pkexec + PolicyKit
+- **Безопасность:** привилегированные операции через pkexec + PolicyKit
 
-## Ключевые возможности
+## Возможности
 
-### Установка и настройка
-- **Менеджер приложений:** каталог из 50+ приложений (Flatpak, DNF, GitHub)
-- **Расширения GNOME:** установка по ID с extensions.gnome.org и из GitHub
-- **Умный предпросмотр:** перед установкой показывается список пакетов, размер загрузки
-- **Автоисправление ошибок:** при 404 (устаревшие индексы) выполняет `dnf makecache` и повторяет установку
-- **Data-Driven UI:** большая часть интерфейса генерируется из JSON-файлов
+### Приложения и расширения
+- Умный предпросмотр перед установкой (список пакетов, размер загрузки)
+- Автоисправление ошибок: при устаревших индексах выполняет `dnf makecache` и повторяет установку
+- Data-Driven UI — интерфейс генерируется из JSON-файлов
 
-### Система
-- **Начало:** автообновление GNOME Software, TRIM (fstrim.timer), лимиты journald, дробное масштабирование
-- **Раскладки клавиатуры:** Alt+Shift, CapsLock, Ctrl+Shift, Win+Space с возможностью отката
-- **Nautilus:** настройка сортировки папок, кэш копирования (vm.dirty), Sushi, f3d, иконки Papirus
-- **Обслуживание:** очистка DNF/Flatpak, Btrfs scrub/balance, SSD TRIM
-- **Твики:** GNOME Shell патчи, приоритеты процессов, sched_ext
+### Система (вкладка «Начало»)
+- Автообновление GNOME Software, TRIM (fstrim.timer), лимиты journald
+- Дробное масштабирование, настройка Nautilus, иконки Papirus
+- Раскладки клавиатуры: Alt+Shift, CapsLock, Ctrl+Shift, Win+Space с откатом
 
-### Резервное копирование
-- **TimeSync:** бэкапы через BorgBackup
-- **Зеркало:** клонирование системы на внешний диск (Btrfs send/receive)
-- **Метаданные:** сохранение списка пакетов, Flatpak-приложений, dconf
+### Обслуживание и твики
+- Очистка кэша DNF/Flatpak, Btrfs scrub/balance, SSD TRIM
+- GNOME Shell патчи, планировщик System76 Scheduler
+
+### Резервное копирование (TimeSync)
+- Бэкапы через BorgBackup, зеркалирование системы на внешний диск (Btrfs send/receive)
+- Сохранение метаданных: список пакетов, Flatpak-приложений, dconf
 
 ### AMD / Intel
-- **AMD Radeon:** разгон, управление через LACT
-- **Intel:** sched_ext планировщик (scx_meteor)
+- AMD Radeon: разгон, управление через LACT
+- Intel: планировщик sched_ext (scx_meteor)
 
 ## Требования
 
@@ -57,109 +59,63 @@
 
 ## Установка
 
-### Из PyPI
-
 ```bash
+# Из PyPI
 pip install fedorabooster
-```
 
-### Из GitHub
-
-```bash
+# Из GitHub
 git clone https://github.com/mikanight/fbuster.git
 cd fbuster
 ./install.sh
 ```
 
-### Запуск
+## Запуск
 
 ```bash
-fedorabooster
-# или через меню приложений GNOME
+fedorabooster                 # основной запуск
+fedorabooster -s              # вкладка «Начало»
+fedorabooster -a              # вкладка «Приложения»
+fedorabooster -e              # вкладка «Расширения»
+fedorabooster -m              # вкладка «Обслуживание»
+fedorabooster --debug         # режим отладки
 ```
 
-Флаги: `-s` (Начало), `-a` (Приложения), `-e` (Расширения), `-f` (Твики), `-t` (TimeSync), `-m` (Обслуживание), `--debug`.
-
-### Удаление
-
-```bash
-./uninstall.sh
-```
-
-## Структура проекта
-
-```
-fedorabooster/
-├── icons/                     # Иконки (.svg, .png)
-├── src/                       # Исходный код
-│   ├── altbooster.py          # Точка входа
-│   ├── core/                  # Бэкенд: система, пакеты, Borg, Btrfs
-│   │   ├── backend.py         # Фасад (реэкспорт API)
-│   │   ├── borg.py            # BorgBackup
-│   │   ├── btrfs.py           # Btrfs: снапшоты, subvolume
-│   │   ├── checks.py          # Проверки состояния системы
-│   │   ├── config.py          # Версия, пути, состояние
-│   │   ├── gsettings.py       # Обёртки gsettings/dconf
-│   │   ├── mirror.py          # Зеркалирование системы
-│   │   ├── packages.py        # DNF/Flatpak: установка, предпросмотр
-│   │   ├── privileges.py      # pkexec, DNF-блокировки
-│   │   ├── sched_ext.py       # sched_ext
-│   │   └── tweaks.py          # Системные твики
-│   ├── modules/               # JSON-описания для Data-Driven UI
-│   ├── tabs/                  # Вкладки приложения
-│   │   ├── setup.py           # «Начало»
-│   │   ├── apps.py            # «Приложения»
-│   │   ├── extensions.py      # «Расширения GNOME»
-│   │   ├── flatpak.py         # «Flatpak»
-│   │   ├── terminal.py        # «Терминал»
-│   │   ├── amd.py             # «AMD Radeon»
-│   │   ├── intel.py           # «Intel»
-│   │   ├── davinci.py         # «DaVinci Resolve»
-│   │   ├── maintenance.py     # «Обслуживание»
-│   │   ├── tweaks.py          # «Твики»
-│   │   └── timesync/          # «TimeSync» (BorgBackup)
-│   └── ui/                    # UI-компоненты
-│       ├── window.py          # Главное окно
-│       ├── rows.py            # ActionRow/ExpanderRow
-│       ├── dynamic_page.py    # Data-Driven движок
-│       ├── style.css          # GTK-стили
-│       └── ...
-├── tests/                     # Тесты (345)
-├── install.sh / uninstall.sh  # Скрипты установки/удаления
-├── Makefile                   # make install
-├── pyproject.toml             # Метаданные, ruff
-└── README.md
-```
+Удаление: `./uninstall.sh`
 
 ## Отличия от ALT Booster
 
 | Оригинал (ALT Linux) | Форк (Fedora) |
-|---|---|
+|----------------------|---------------|
 | apt-get / EPM | DNF / DNF5 |
-| `apt-get update` | `dnf makecache` |
 | `epm -i` / `epm -e` | `dnf install` / `dnf remove` |
+| `apt-get update` | `dnf makecache` |
 | `update-grub` | `grub2-mkconfig` |
-| `usermod -aG wheel` | удалено (Fedora включает sudo из коробки) |
+| `usermod -aG wheel` | удалено (Fedora включает sudo по умолчанию) |
 | `nautilus-admin-gtk4` | удалено (нет в Fedora) |
 | `papirus-remix-icon-theme` | `papirus-icon-theme` |
 | `altbooster` (команда) | `fedorabooster` |
-| нет проверки is_system_busy | PackageKit + DNF lock |
+| ananicy-cpp, LAVD | System76 Scheduler |
 
 ## Разработка
 
 ```bash
-# Клонировать
 git clone https://github.com/mikanight/fbuster.git
 cd fbuster
-
-# Установить в dev-режиме
 pip install -e .
 
-# Запустить тесты
-pytest tests/ -q
+pytest tests/ -q              # тесты (345)
+ruff check src/ tests/        # линтер
+```
 
-# Линтер
-ruff check src/ tests/
+## Структура
+
+```
+src/
+├── altbooster.py          # Точка входа
+├── core/                  # Бэкенд (система, DNF, Borg, Btrfs, pkexec)
+├── modules/               # JSON-описания для Data-Driven UI
+├── tabs/                  # Вкладки (setup, apps, extensions, flatpak, terminal, amd, davinci, maintenance, tweaks, timesync)
+└── ui/                    # UI-компоненты (window, rows, dynamic_page, style.css)
 ```
 
 ## Лицензия
