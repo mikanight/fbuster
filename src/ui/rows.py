@@ -621,8 +621,8 @@ class AppRow(Adw.ActionRow):
 
         def _first_attempt_done(ok):
             if not ok and self._install_needs_update:
-                self._log("\n⚠  Обнаружены устаревшие индексы. Выполняю обновление (apt-get update)...\n")
-                backend.run_privileged(["apt-get", "update"], self._log, _on_update_done)
+                self._log("\n⚠  Обнаружены устаревшие индексы. Выполняю обновление (dnf makecache)...\n")
+                backend.run_privileged(["dnf", "makecache"], self._log, _on_update_done)
             else:
                 self._install_done(ok)
 

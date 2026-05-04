@@ -612,7 +612,7 @@ class ExtensionsPage(Gtk.Box):
         
         if not pip_cmd:
             GLib.idle_add(self._log, "▶  pip не найден. Устанавливаю системные пакеты...\n")
-            if not backend.run_privileged_sync(["apt-get", "install", "-y", "pip", "python3-module-pip"], self._log):
+            if not backend.run_privileged_sync(["dnf", "install", "-y", "python3-pip"], self._log):
                 return None
             pip_cmd = next((c for c in ("pip3", "pip") if shutil.which(c)), None)
 

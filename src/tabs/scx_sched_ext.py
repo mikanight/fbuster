@@ -172,11 +172,11 @@ class SchedExtSupportSection:
             win.start_progress("Установка ядра…")
 
         def _thread() -> None:
-            ok_u = backend.run_privileged_sync(["apt-get", "update"], self._log)
+            ok_u = backend.run_privileged_sync(["dnf", "makecache"], self._log)
             ok_i = False
             if ok_u:
                 ok_i = backend.run_privileged_sync(
-                    ["apt-get", "install", "-y", KERNEL_IMAGE_SCHED_EXT],
+                    ["dnf", "install", "-y", KERNEL_IMAGE_SCHED_EXT],
                     self._log,
                 )
 

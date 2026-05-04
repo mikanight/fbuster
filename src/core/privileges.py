@@ -154,7 +154,7 @@ def _apt_dedup_filter(on_line: OnLine) -> OnLine:
         "option in your configuration file",
         "RPM:",
         "To disable these warnings completely set",
-        "You may want to run apt-get update to correct",
+        "You may want to run dnf makecache to correct",
         "В Вашей системе установлено несколько версий пакета",
         "Этот пакет не может быть обновлён обычным путём",
         "оставите только одну его версию",

@@ -233,40 +233,9 @@ class SourceEditPage(Adw.NavigationPage):
         elif cmd and cmd[0] == "epm":
             t = "epm_install"
             pkg = cmd[-1]
-        elif cmd and cmd[0] in ("apt-get", "apt"):
+        elif cmd and cmd[0] in ("apt-get", "apt", "dnf", "dnf5"):
             t = "apt"
             pkg = cmd[-1]
-        else:
-            t = "script"
-            pkg = ""
-
-        if t in self._SOURCE_KEYS:
-            self._type_row.set_selected(self._SOURCE_KEYS.index(t))
-        self._pkg_row.set_text(pkg)
-
-        check = src.get("check", [])
-        check_id = check[1] if len(check) > 1 else ""
-        if check_id and check_id != pkg:
-            self._check_row.set_text(check_id)
-
-    def _on_done(self, _):
-        pkg = self._pkg_row.get_text().strip()
-        if not pkg:
-            return
-
-        tidx = self._type_row.get_selected()
-        src_type = self._SOURCE_KEYS[tidx] if tidx < len(self._SOURCE_KEYS) else "flatpak"
-        check_id = self._check_row.get_text().strip() or pkg
-
-        if src_type == "flatpak":
-            cmd = ["flatpak", "install", "-y", "flathub", pkg]
-            ck = "flatpak"
-        elif src_type == "epm_install":
-            cmd = ["epm", "-i", "-y", pkg]
-            ck = "rpm"
-        elif src_type == "epm_play":
-            cmd = ["epm", "play", pkg]
-            ck = "rpm"
         elif src_type == "apt":
             cmd = ["apt-get", "install", "-y", pkg]
             ck = "rpm"

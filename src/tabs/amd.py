@@ -84,8 +84,8 @@ class AmdPage(DynamicPage):
         if not ok:
             self._log("✘  Ошибка записи конфига GRUB.\n")
             return
-        self._log("▶  Обновление загрузчика (update-grub)...\n")
-        backend.run_privileged(["update-grub"], self._log, lambda ok2: self._log("✔  Готово! Перезагрузите ПК.\n" if ok2 else "✘  Ошибка update-grub\n"))
+        self._log("▶  Обновление загрузчика (grub2-mkconfig)...\n")
+        backend.run_privileged(["grub2-mkconfig", "-o", "/boot/grub2/grub.cfg"], self._log, lambda ok2: self._log("✔  Готово! Перезагрузите ПК.\n" if ok2 else "✘  Ошибка grub2-mkconfig\n"))
 
     def confirm_reboot(self):
         d = Adw.AlertDialog(

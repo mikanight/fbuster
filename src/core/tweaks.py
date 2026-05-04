@@ -63,7 +63,7 @@ echo "Создаю резервную копию: $BACKUP"
 cp "$TARGET" "$BACKUP"
 
 echo "Устанавливаю утилиту patch..."
-apt-get install -y patch
+dnf install -y patch
 
 echo "Применяю патч..."
 patch -u -f "$TARGET" < {qpatch}

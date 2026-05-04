@@ -23,12 +23,12 @@
           "id": "grub_rebuild",
           "type": "command_row",
           "title": "Обновление загрузчика",
-          "subtitle": "Применяет параметры ядра (update-grub)",
+          "subtitle": "Применяет параметры ядра (grub2-mkconfig)",
           "icon": "system-reboot-symbolic",
           "button_label": "Применить",
           "button_style": "suggested-action",
           "check": null,
-          "action": { "type": "privileged", "cmd": ["update-grub"] }
+          "action": { "type": "privileged", "cmd": ["grub2-mkconfig", "-o", "/boot/grub2/grub.cfg"] }
         },
         {
           "id": "reboot",
