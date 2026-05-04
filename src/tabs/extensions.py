@@ -30,6 +30,7 @@ from ui.widgets import (
 
 
 RECOMMENDED = [
+    # === 5 сохранено ===
     (
         "appindicatorsupport@rgcjonas.gmail.com",
         "AppIndicator and KStatusNotifierItem",
@@ -49,64 +50,96 @@ RECOMMENDED = [
         "3843",
     ),
     (
-        "dash-to-dock@micxgx.gmail.com",
-        "Dash to Dock",
-        "Превращает панель GNOME в док-станцию в стиле macOS.",
-        "307",
-    ),
-    (
-        "dash-to-panel@jderose9.github.com",
-        "Dash to Panel",
-        "Создаёт единую панель задач в стиле Windows/KDE.",
-        "1160",
-    ),
-    (
         "blur-my-shell@aunetx",
         "Blur my Shell",
         "Эффект размытия для обзора, панели и других элементов.",
         "3193",
     ),
     (
-        "pigeon@subz69.github",
-        "Pigeon Email Notifier",
-        "Уведомления о новых письмах для почтовых ящиков IMAP.",
-        "9301",
-    ),
-    (
-        "auto-accent-colour@Wartybix",
-        "Auto Accent Colour",
-        "Автоматически подбирает цвет акцента под обои рабочего стола.",
-        "7502",
-    ),
-    (
-        "rounded-window-corners@fxgn",
-        "Rounded Window Corners Reborn",
-        "Скругляет углы окон приложений.",
-        "7048",
-    ),
-    (
-        "ding@rastersoft.com",
-        "Desktop Icons NG (DING)",
-        "Добавляет иконки на рабочий стол.",
-        "2087",
-    ),
-    (
-        "no-overview@fthx",
-        "No Overview at Startup",
-        "Отключает обзор при запуске сеанса.",
-        "4099",
-    ),
-    (
-        "status-tray@keithvassallo.com",
-        "Status Tray",
-        "Позволяет группировать и скрывать значки в системном лотке.",
-        "9164",
-    ),
-    (
         "right-click-next@derVedro",
         "Right Click Next",
         "Добавляет кнопки «Следующий трек» и «Предыдущий» в контекстное меню медиаплеера.",
         "7600",
+    ),
+    # === 11 новых из GNOME Extensions ===
+    (
+        "caffeine@patapon.info",
+        "Caffeine",
+        "Запрещает активацию заставки и спящего режима.",
+        "517",
+    ),
+    (
+        "clipboard-indicator@tudmotu.com",
+        "Clipboard Indicator",
+        "Менеджер буфера обмена в верхней панели.",
+        "779",
+    ),
+    (
+        "compiz-alike-magic-lamp-effect@hermes83.github.com",
+        "Compiz alike magic lamp effect",
+        "Эффект «волшебной лампы» при сворачивании окон (как в Compiz).",
+        "3740",
+    ),
+    (
+        "date-menu-formatter@marcinjakubowski.github.com",
+        "Date Menu Formatter",
+        "Настройка формата даты и времени в верхней панели.",
+        "4655",
+    ),
+    (
+        "status-area-horizontal-spacing@mathematical.coffee.gmail.com",
+        "Status Area Horizontal Spacing",
+        "Регулировка горизонтальных отступов в системном лотке.",
+        "355",
+    ),
+    (
+        "tilingshell@ferrarodomenico.com",
+        "Tiling Shell",
+        "Оконный тайлинг с горячими клавишами и раскладками.",
+        "7065",
+    ),
+    (
+        "tweaks-system-menu@extensions.gnome.org",
+        "Tweaks & Extensions in System Menu",
+        "Добавляет ярлыки Tweaks и Extensions в системное меню.",
+        "1653",
+    ),
+    (
+        "weatherornot@somepaulo.github.io",
+        "Weather or Not",
+        "Прогноз погоды в верхней панели.",
+        "5660",
+    ),
+    (
+        "windowIsReady_Remover@nunofarruca",
+        "Window Is Ready Notification Remover",
+        "Убирает уведомление «Окно готово» при запуске приложений.",
+        "1007",
+    ),
+    (
+        "advanced-weather-companion@timur@linux.com",
+        "Advanced Weather Companion",
+        "Расширенный погодный виджет с прогнозом на несколько дней.",
+        "7603",
+    ),
+    (
+        "transcodeappsearch@marmistrz",
+        "Transcode App Search",
+        "Кастомизация поиска приложений в обзоре GNOME.",
+        "928",
+    ),
+    # === 2 из GitHub ===
+    (
+        "zorkiy@toxblh.ru",
+        "Zorkiy",
+        "Инструмент для мониторинга и управления приоритетами процессов. Требует system76-scheduler.",
+        "github:https://github.com/Toxblh/gnome-shell-extension-zorkiy",
+    ),
+    (
+        "icon-matcher@peppodev",
+        "Icon Matcher",
+        "Автоматически подбирает иконки приложений под выбранную тему.",
+        "github:https://github.com/PeppoDev/icon-matcher",
     ),
 ]
 
@@ -120,6 +153,18 @@ def _gext_path() -> str | None:
     local_bin = Path.home() / ".local" / "bin" / "gext"
     if local_bin.exists():
         return str(local_bin)
+    return None
+
+
+def _find_extension_dir(repo_path: Path, uuid: str) -> Path | None:
+    """Ищет директорию расширения в клонированном репозитории по UUID или metadata.json."""
+    for candidate in repo_path.rglob("metadata.json"):
+        parent = candidate.parent
+        uuid_segment = uuid.split("@")[0]
+        if parent.name == uuid or uuid_segment in parent.name.lower():
+            return parent
+    for candidate in repo_path.rglob("metadata.json"):
+        return candidate.parent
     return None
 
 
@@ -629,6 +674,43 @@ class ExtensionsPage(Gtk.Box):
         GLib.idle_add(self._log, "✔  gext установлен!\n")
         return _gext_path() or "gext"
 
+    def _install_from_github(self, repo_url: str, uuid: str, status, btn, done_cb) -> None:
+        tmp = tempfile.mkdtemp(prefix="fedorabooster-ext-")
+        try:
+            r = subprocess.run(
+                ["git", "clone", "--depth=1", repo_url, tmp],
+                capture_output=True, text=True,
+            )
+            if r.returncode != 0:
+                GLib.idle_add(self._log, f"✘  Ошибка клонирования: {r.stderr}\n")
+                GLib.idle_add(lambda: done_cb(False))
+                return
+
+            src_dir = _find_extension_dir(Path(tmp), uuid)
+            if not src_dir:
+                GLib.idle_add(self._log, f"✘  Не удалось найти директорию расширения в репозитории\n")
+                GLib.idle_add(lambda: done_cb(False))
+                return
+
+            dst = _USER_EXT_DIR / uuid
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in src_dir.iterdir():
+                if item.is_dir():
+                    shutil.copytree(item, dst / item.name, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(item, dst / item.name)
+
+            r_en = subprocess.run(
+                ["gnome-extensions", "enable", uuid],
+                capture_output=True, text=True,
+            )
+            if r_en.returncode != 0:
+                self._log(f"⚠  Расширение скопировано, но не удалось включить: {r_en.stderr.strip()}\n")
+
+            GLib.idle_add(lambda: done_cb(True))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
     def _install_by_id(self, ext_id):
         self._id_entry.set_sensitive(False)
         clear_status(self._id_status)
@@ -941,22 +1023,22 @@ class ExtensionsPage(Gtk.Box):
             btn.set_label("Уже системное")
             return
 
-        if install_id and install_id.startswith("epm:"):
-            pkg = install_id[4:]
-            self._log(f"\n▶  Установка {pkg} (EPM)...\n")
+        if install_id and install_id.startswith("github:"):
+            repo_url = install_id[7:]
+            self._log(f"\n▶  Установка {uuid} из GitHub...\n")
             win = self.get_root()
-            if hasattr(win, "start_progress"): win.start_progress(f"Установка {pkg}...")
+            if hasattr(win, "start_progress"): win.start_progress(f"Установка {uuid}...")
             def _done(ok):
                 if ok:
                     self._log("✔  Установлено!\n")
                     GLib.idle_add(self._refresh_installed)
                 else:
-                    self._log(f"✘  Ошибка установки {pkg}\n")
+                    self._log(f"✘  Ошибка установки {uuid}\n")
                     GLib.idle_add(set_status_error, status)
                     GLib.idle_add(btn.set_label, "Повторить")
                     GLib.idle_add(btn.set_sensitive, True)
                 if hasattr(win, "stop_progress"): win.stop_progress(ok)
-            backend.run_epm(["epm", "-i", "-y", pkg], self._log, _done)
+            threading.Thread(target=lambda: self._install_from_github(repo_url, uuid, status, btn, _done), daemon=True).start()
             return
 
         self._log(f"\n▶  Установка {uuid}...\n")
