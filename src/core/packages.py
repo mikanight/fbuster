@@ -5,7 +5,6 @@ import subprocess
 from dataclasses import dataclass, field
 from typing import Callable
 
-
 PrivilegedRunner = Callable[[list[str], Callable[[str], None]], bool]
 
 

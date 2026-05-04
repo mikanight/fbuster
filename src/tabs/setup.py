@@ -9,15 +9,16 @@ import threading
 from pathlib import Path
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk
 
-from core import backend
-from core import config
+from core import backend, config
 from ui.install_preview_dialog import InstallPreviewDialog
-from ui.widgets import make_button, make_icon, make_scrolled_page, scroll_child_into_view
 from ui.rows import SettingRow
+from ui.widgets import make_button, make_icon, make_scrolled_page, scroll_child_into_view
+
 
 def _make_channel_badge(channel: str) -> Gtk.Label:
     lbl = Gtk.Label(label=channel)
@@ -248,28 +249,28 @@ class SetupPage(Gtk.Box):
         self._log("\n▶  Оптимизация Центра приложений (отключение download-updates)...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Настройка GNOME Software...")
-        
+
         def _do():
             ok = backend.run_gsettings(["set", "org.gnome.software", "download-updates", "false"])
             GLib.idle_add(row.set_done, ok)
             GLib.idle_add(self._log, "✔  Фоновая загрузка пакетов отключена. Применяется сразу, перезагрузка не нужна.\n" if ok else "✘  Ошибка применения настроек GNOME\n")
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
-            
-        threading.Thread(target=_do, daemon=True).start()    
+
+        threading.Thread(target=_do, daemon=True).start()
 
     def _on_gnome_software_updates_undo(self, row):
         row.set_working()
         self._log("\n▶  Включение автообновлений GNOME Software...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Настройка GNOME Software...")
-        
+
         def _do():
             ok = backend.run_gsettings(["set", "org.gnome.software", "download-updates", "true"])
             GLib.idle_add(row.set_undo_done, ok)
             GLib.idle_add(self._log, "✔  Автообновления включены.\n" if ok else "✘  Ошибка\n")
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
         threading.Thread(target=_do, daemon=True).start()
-        
+
     def _on_epm(self, row):
         row.set_working()
         win = self.get_root()
@@ -366,7 +367,7 @@ class SetupPage(Gtk.Box):
             ("document-open-recent-symbolic",      "Лимиты журналов",             "SystemMaxUse=100M и сжатие в journald.conf",    "Настроить",    self._on_journal_limit,  backend.is_journal_optimized,          "setting_journal_opt", "Активировано", self._on_journal_limit_undo, "Сбросить"),
             ("video-display-symbolic",             "Дробное масштабирование",     "Включает scale-monitor-framebuffer",            "Включить",     self._on_scale,          backend.is_fractional_scaling_enabled, "setting_scale", "Активировано", self._on_scale_undo, "Отключить"),
         ]
-        
+
         self._r_sudo, self._r_gnome_sw, self._r_trim, self._r_journal, self._r_scale = [
             SettingRow(*r) for r in sys_rows
         ]
@@ -379,12 +380,12 @@ class SetupPage(Gtk.Box):
             self._r_scale
         ):
             sys_group.add(r)
-            
+
     def _build_filemanager_group(self, body):
         group = Adw.PreferencesGroup()
         group.set_title("Файловый менеджер Nautilus и иконки")
         body.append(group)
-        
+
         def _check_nautilus():
             try:
                 sort = backend.gsettings_get("org.gtk.gtk4.Settings.FileChooser", "sort-directories-first")
@@ -392,17 +393,6 @@ class SetupPage(Gtk.Box):
                 return "true" in sort.lower() and "true" in links.lower()
             except Exception:
                 return False
-
-        is_sisyphus = self._is_sisyphus()
-        f3d_btn_label = "Установить" if is_sisyphus else "Только Sisyphus"
-
-        rows = [
-            ("system-file-manager-symbolic", "Настройки Nautilus", "Сортировка папок, создание ссылок, подписи файлов", "Применить", self._on_nautilus, _check_nautilus, "setting_nautilus", "Применены", self._on_nautilus_undo, "Сбросить"),
-            ("drive-harddisk-symbolic", "Индикатор копирования", "Адекватный прогресс-бар копирования (vm.dirty)", "Исправить", self._on_vm_dirty, backend.is_vm_dirty_optimized, "setting_vm_dirty", "Исправлено", self._on_vm_dirty_undo, "Сбросить"),
-            ("security-high-symbolic", "Запуск от администратора", "Пункт «Открыть как администратор» (nautilus-admin)", "Установить", self._on_install_nautilus_admin, lambda: backend.check_app_installed({"check": ["rpm", "nautilus-admin-gtk4"]}), "app_nautilus_admin", "Установлено", self._on_remove_nautilus_admin, "Удалить", "user-trash-symbolic"),
-            ("view-reveal-symbolic", "Предпросмотр (Sushi)", "Быстрый просмотр файлов по пробелу", "Установить", self._on_install_sushi, lambda: backend.check_app_installed({"check": ["rpm", "sushi"]}), "app_sushi", "Установлено", self._on_remove_sushi, "Удалить", "user-trash-symbolic"),
-            ("image-x-generic-symbolic", "3D превью (f3d)", "Визуализация 3D моделей в Nautilus", f3d_btn_label, self._on_install_f3d, lambda: backend.check_app_installed({"check": ["rpm", "f3d"]}), "app_f3d", "Установлено", self._on_remove_f3d, "Удалить", "user-trash-symbolic"),
-        ]
 
         self._papirus_row = self._create_papirus_row()
 
@@ -737,7 +727,7 @@ class SetupPage(Gtk.Box):
         is_caps = "Caps" in value
         is_ctrl = "Control" in value
         is_alt = "Alt" in value and not is_ctrl
-        
+
         config.state_set("setting_kbd_altshift", is_alt)
         config.state_set("setting_kbd_capslock", is_caps)
         config.state_set("setting_kbd_ctrlshift", is_ctrl)
@@ -748,7 +738,7 @@ class SetupPage(Gtk.Box):
             config.state_set("setting_kbd_mode", "ctrlshift")
         elif is_alt:
             config.state_set("setting_kbd_mode", "altshift")
-            
+
         GLib.idle_add(self._r_caps._set_ui, is_caps)
         GLib.idle_add(self._r_ctrl._set_ui, is_ctrl)
         GLib.idle_add(self._r_alt._set_ui, is_alt)

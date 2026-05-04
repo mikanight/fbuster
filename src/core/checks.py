@@ -6,9 +6,9 @@ import subprocess
 import threading
 from pathlib import Path
 
-from .gsettings import gsettings_get
 from core import config
 
+from .gsettings import gsettings_get
 
 _desktop_files_cache: list[Path] | None = None
 _desktop_files_lock = threading.Lock()

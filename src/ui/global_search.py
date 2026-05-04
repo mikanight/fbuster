@@ -243,7 +243,7 @@ def _apps_catalog_items() -> list[GlobalSearchItem]:
 
 def _extension_catalog_items() -> list[GlobalSearchItem]:
     """Рекомендуемые и установленные расширения GNOME Shell (uuid, название, описание)."""
-    from tabs.extensions import RECOMMENDED, _read_extensions_from, _SYSTEM_EXT_DIR, _USER_EXT_DIR
+    from tabs.extensions import _SYSTEM_EXT_DIR, _USER_EXT_DIR, RECOMMENDED, _read_extensions_from
 
     tab_kw = _TAB_KEYWORDS.get("extensions", ())
     merged: dict[str, dict] = {}

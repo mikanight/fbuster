@@ -8,8 +8,6 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
-from core import config
-
 _ALWAYS_EXCLUDES = [
     "/proc", "/sys", "/dev", "/run",
     "/tmp", "/var/tmp", "/lost+found",
@@ -214,7 +212,7 @@ def mirror_btrfs_stream(subvolumes: list[str], dest_dir: str, on_line, on_done, 
     script_lines = [
         "set -e",
         f'trap \'umount {shlex.quote(toplevel)} 2>/dev/null; rmdir {shlex.quote(toplevel)} 2>/dev/null\' EXIT',
-        f'BTRFS_DEV=$(findmnt -n -o SOURCE / | sed \'s/\\[.*\\]//\')',
+        'BTRFS_DEV=$(findmnt -n -o SOURCE / | sed \'s/\\[.*\\]//\')',
         f'mkdir -p {shlex.quote(toplevel)}',
         f'mount -t btrfs -o subvolid=5 "$BTRFS_DEV" {shlex.quote(toplevel)}',
         '',
@@ -227,7 +225,7 @@ def mirror_btrfs_stream(subvolumes: list[str], dest_dir: str, on_line, on_done, 
         sv_path  = shlex.quote(f"{toplevel}/{subvol}")
         out_file = shlex.quote(str(dest / f"{name}.btrfs"))
         script_lines += [
-            f'echo ""',
+            'echo ""',
             f'echo "Субволюм {idx}/{total}: {subvol}"',
             f'if [ -d {sv_path} ]; then',
             f'  btrfs subvolume snapshot -r {sv_path} {snap}',
@@ -236,9 +234,9 @@ def mirror_btrfs_stream(subvolumes: list[str], dest_dir: str, on_line, on_done, 
             f'  btrfs send {snap} > {out_file}',
             f'  btrfs subvolume delete {snap}',
             f'  echo "✔  Субволюм {idx}/{total} сохранён."',
-            f'else',
-            f'  echo "⚠  Субволюм не найден на диске, пропуск."',
-            f'fi',
+            'else',
+            '  echo "⚠  Субволюм не найден на диске, пропуск."',
+            'fi',
             '',
         ]
 
@@ -259,12 +257,12 @@ def mirror_btrfs_send(subvolumes: list[str], dest_dir: str, on_line, on_done, ru
     script_lines = [
         "set -e",
         f'DEST_FS=$(findmnt -n -o FSTYPE --target {dest_q} 2>/dev/null || echo unknown)',
-        f'if [ "$DEST_FS" != "btrfs" ]; then',
-        f'  echo "Ошибка: папка назначения должна быть на Btrfs-разделе (обнаружен FS: $DEST_FS)"',
-        f'  exit 1',
-        f'fi',
+        'if [ "$DEST_FS" != "btrfs" ]; then',
+        '  echo "Ошибка: папка назначения должна быть на Btrfs-разделе (обнаружен FS: $DEST_FS)"',
+        '  exit 1',
+        'fi',
         f'trap \'umount {shlex.quote(toplevel)} 2>/dev/null; rmdir {shlex.quote(toplevel)} 2>/dev/null\' EXIT',
-        f'BTRFS_DEV=$(findmnt -n -o SOURCE / | sed \'s/\\[.*\\]//\')',
+        'BTRFS_DEV=$(findmnt -n -o SOURCE / | sed \'s/\\[.*\\]//\')',
         f'mkdir -p {shlex.quote(toplevel)}',
         f'mount -t btrfs -o subvolid=5 "$BTRFS_DEV" {shlex.quote(toplevel)}',
         '',
@@ -280,29 +278,29 @@ def mirror_btrfs_send(subvolumes: list[str], dest_dir: str, on_line, on_done, ru
         sv_path   = shlex.quote(f"{toplevel}/{subvol}")
 
         script_lines += [
-            f'echo ""',
+            'echo ""',
             f'echo "Субволюм {idx}/{total}: {subvol}"',
             f'if [ -d {sv_path} ]; then',
             f'  [ -d {new_snap} ] && btrfs subvolume delete {new_snap} || true',
             f'  [ -d {dest_new} ] && btrfs subvolume delete {dest_new} || true',
             f'  btrfs subvolume snapshot -r {sv_path} {new_snap}',
             f'  _SZ=$(du -sh {new_snap} 2>/dev/null | cut -f1)',
-            f'  echo "Объём данных: $_SZ"',
+            '  echo "Объём данных: $_SZ"',
             f'  if [ -d {prev_snap} ] && [ -d {dest_prev} ]; then',
-            f'    echo "Передача изменений с прошлого раза..."',
+            '    echo "Передача изменений с прошлого раза..."',
             f'    btrfs send --parent {prev_snap} {new_snap} | btrfs receive {dest_q}/',
-            f'  else',
-            f'    echo "Первая копия — передача всех данных (это займёт время)..."',
+            '  else',
+            '    echo "Первая копия — передача всех данных (это займёт время)..."',
             f'    btrfs send {new_snap} | btrfs receive {dest_q}/',
-            f'  fi',
+            '  fi',
             f'  echo "✔  Субволюм {idx}/{total} скопирован."',
             f'  [ -d {prev_snap} ] && btrfs subvolume delete {prev_snap} || true',
             f'  [ -d {dest_prev} ] && btrfs subvolume delete {dest_prev} || true',
             f'  mv {new_snap} {prev_snap}',
             f'  mv {dest_new} {dest_prev}',
-            f'else',
-            f'  echo "⚠  Субволюм не найден на диске, пропуск."',
-            f'fi',
+            'else',
+            '  echo "⚠  Субволюм не найден на диске, пропуск."',
+            'fi',
             '',
         ]
 
@@ -598,19 +596,19 @@ def _build_auto_restore_script(mirror_dir: str, target_device: str, info: dict) 
     if info["type"] == "rsync":
         lines += ["mkdir -p /mnt/target", f"mount {root_part} /mnt/target"]
         if uefi:
-            lines += [f"mkdir -p /mnt/target/boot/efi", f"mount {efi_part} /mnt/target/boot/efi"]
-        lines.append(f'rsync -aAX "$MIRROR_DIR/rootfs/" /mnt/target/')
+            lines += ["mkdir -p /mnt/target/boot/efi", f"mount {efi_part} /mnt/target/boot/efi"]
+        lines.append('rsync -aAX "$MIRROR_DIR/rootfs/" /mnt/target/')
 
     elif info["type"] == "tar":
         lines += ["mkdir -p /mnt/target", f"mount {root_part} /mnt/target"]
         if uefi:
-            lines += [f"mkdir -p /mnt/target/boot/efi", f"mount {efi_part} /mnt/target/boot/efi"]
-        lines.append(f'tar -xzpf "$MIRROR_DIR"/rootfs-*.tar.gz -C /mnt/target/')
+            lines += ["mkdir -p /mnt/target/boot/efi", f"mount {efi_part} /mnt/target/boot/efi"]
+        lines.append('tar -xzpf "$MIRROR_DIR"/rootfs-*.tar.gz -C /mnt/target/')
 
     elif info["type"] == "btrfs":
         lines += ["mkdir -p /mnt/target", f"mount {root_part} /mnt/target"]
         if uefi:
-            lines += [f"mkdir -p /mnt/target/boot/efi", f"mount {efi_part} /mnt/target/boot/efi"]
+            lines += ["mkdir -p /mnt/target/boot/efi", f"mount {efi_part} /mnt/target/boot/efi"]
         for subvol in info.get("subvols", []):
             lines.append(f'btrfs receive /mnt/target < "$MIRROR_DIR/{subvol}.btrfs"')
 
@@ -629,7 +627,7 @@ def _build_auto_restore_script(mirror_dir: str, target_device: str, info: dict) 
         if home_name:
             lines += ["mkdir -p /mnt/target/home", f"mount -o subvol={home_name} {root_part} /mnt/target/home"]
         if uefi:
-            lines += [f"mkdir -p /mnt/target/boot/efi", f"mount {efi_part} /mnt/target/boot/efi"]
+            lines += ["mkdir -p /mnt/target/boot/efi", f"mount {efi_part} /mnt/target/boot/efi"]
 
     lines += [
         "",

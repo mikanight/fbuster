@@ -1,7 +1,5 @@
 
 import json
-import os
-import re
 import shlex
 import shutil
 import subprocess
@@ -9,18 +7,19 @@ import tempfile
 import threading
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from core import backend
-from ui.common import load_module
-from ui.widgets import make_button, make_icon, make_scrolled_page, scroll_child_into_view
-from ui.rows import SettingRow, TaskRow
 from core.sched_ext import has_sched_ext
 from tabs.intel import ScxMeteorTweaksSection
 from tabs.scx_sched_ext import SchedExtSupportSection
 from tabs.system76_scheduler import System76SchedulerTweaksSection
+from ui.common import load_module
+from ui.rows import SettingRow, TaskRow
+from ui.widgets import make_scrolled_page, scroll_child_into_view
 
 _ANANICY_RULES_REPO = "https://github.com/CachyOS/ananicy-rules"
 _ANANICY_RULES_DIR  = "/etc/ananicy.d/cachyos-rules"

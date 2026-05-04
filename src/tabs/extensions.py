@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Callable
 import re
 import shutil
 import subprocess
@@ -12,8 +11,10 @@ import threading
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from typing import Callable
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk
@@ -23,11 +24,16 @@ from core.config import CONFIG_DIR
 
 _SHELLVER_BACKUP = CONFIG_DIR / "ext_shellver_backup.json"
 from ui.widgets import (
-    make_button, make_scrolled_page, make_icon,
-    make_status_icon, set_status_ok, set_status_error, clear_status, make_suffix_box,
+    clear_status,
+    make_button,
+    make_icon,
+    make_scrolled_page,
+    make_status_icon,
+    make_suffix_box,
     scroll_child_into_view,
+    set_status_error,
+    set_status_ok,
 )
-
 
 RECOMMENDED = [
     # === 5 сохранено ===
@@ -582,25 +588,25 @@ class ExtensionsPage(Gtk.Box):
             shell_ver = self._get_shell_version()
             key = "pk" if target_id.isdigit() else "uuid"
             url = f"https://extensions.gnome.org/extension-info/?{key}={target_id}&shell_version={shell_ver}"
-            
+
             req = urllib.request.Request(url, headers={"User-Agent": "ALTBooster"})
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read().decode())
-            
+
             dl_path = data.get("download_url")
             if not dl_path:
                 raise ValueError("Не удалось найти версию для вашего GNOME Shell")
-            
+
             uuid = data.get("uuid")
             full_url = f"https://extensions.gnome.org{dl_path}"
-            
+
             with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
                 urllib.request.urlretrieve(full_url, tmp.name)
                 zip_path = tmp.name
-            
+
             subprocess.run(["gnome-extensions", "install", "--force", zip_path], check=True)
             os.unlink(zip_path)
-            
+
             if uuid:
                 subprocess.run(["gnome-extensions", "enable", uuid])
             return True, uuid
@@ -652,9 +658,9 @@ class ExtensionsPage(Gtk.Box):
             return gext
 
         GLib.idle_add(self._log, "▶  gext не найден, устанавливаю...\n")
-        
+
         pip_cmd = next((c for c in ("pip3", "pip") if shutil.which(c)), None)
-        
+
         if not pip_cmd:
             GLib.idle_add(self._log, "▶  pip не найден. Устанавливаю системные пакеты...\n")
             if not backend.run_privileged_sync(["dnf", "install", "-y", "python3-pip"], self._log):
@@ -670,7 +676,7 @@ class ExtensionsPage(Gtk.Box):
         )
         if r_pip.returncode != 0:
             return None
-            
+
         GLib.idle_add(self._log, "✔  gext установлен!\n")
         return _gext_path() or "gext"
 
@@ -688,7 +694,7 @@ class ExtensionsPage(Gtk.Box):
 
             src_dir = _find_extension_dir(Path(tmp), uuid)
             if not src_dir:
-                GLib.idle_add(self._log, f"✘  Не удалось найти директорию расширения в репозитории\n")
+                GLib.idle_add(self._log, "✘  Не удалось найти директорию расширения в репозитории\n")
                 GLib.idle_add(lambda: done_cb(False))
                 return
 
@@ -764,7 +770,7 @@ class ExtensionsPage(Gtk.Box):
             return
         self._search_busy = True
         clear_status(self._id_status)
-        
+
         if self._search_results_group:
             self._body.remove(self._search_results_group)
             self._search_results_group = None
@@ -774,12 +780,12 @@ class ExtensionsPage(Gtk.Box):
                 params = urllib.parse.urlencode({"search": query, "n_per_page": 10})
                 url = f"https://extensions.gnome.org/extension-query/?{params}"
                 req = urllib.request.Request(url, headers={"User-Agent": "ALTBooster"})
-                
+
                 with urllib.request.urlopen(req, timeout=10) as response:
                     data = json.loads(response.read().decode())
-                
+
                 results = data.get("extensions", [])
-                
+
                 installed_uuids = set()
                 try:
                     r = subprocess.run(["gnome-extensions", "list"], capture_output=True, text=True)
@@ -789,7 +795,7 @@ class ExtensionsPage(Gtk.Box):
                     pass
 
                 GLib.idle_add(self._display_search_results, results, installed_uuids)
-                
+
             except Exception as e:
                 GLib.idle_add(self._log, f"✘ Ошибка поиска: {e}\n")
                 GLib.idle_add(set_status_error, self._id_status)
@@ -815,10 +821,10 @@ class ExtensionsPage(Gtk.Box):
             return
 
         set_status_ok(self._id_status)
-        
+
         group = Adw.PreferencesGroup()
         group.set_title(f"Результаты поиска ({len(results)})")
-        
+
         if self._installed_group:
             prev = None
             child = self._body.get_first_child()
@@ -830,7 +836,7 @@ class ExtensionsPage(Gtk.Box):
             self._body.insert_child_after(group, prev)
         else:
             self._body.append(group)
-            
+
         self._search_results_group = group
 
         for ext in results:
@@ -1043,11 +1049,11 @@ class ExtensionsPage(Gtk.Box):
 
         self._log(f"\n▶  Установка {uuid}...\n")
         win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress(f"Установка расширения...")
+        if hasattr(win, "start_progress"): win.start_progress("Установка расширения...")
 
         def _do():
             gext = self._ensure_gext()
-            
+
             fixed, broken_system = _fix_float_versions_in_metadata(self._log)
             if fixed:
                 GLib.idle_add(self._log, f"⚠  Исправлены float-версии в metadata.json: {', '.join(fixed)}\n")
@@ -1062,10 +1068,10 @@ class ExtensionsPage(Gtk.Box):
                 ok = (r.returncode == 0) and not err_msg
                 if not ok and not err_msg:
                     err_msg = r.stderr.strip() or "Не удалось установить расширение"
-            
+
             if not ok:
                 ok, _ = self._install_native_fallback(target, uuid_hint=uuid)
-            
+
             if ok:
                 self._log("✔  Установлено!\n")
                 GLib.idle_add(self._refresh_installed)
@@ -1171,7 +1177,7 @@ class ExtensionsPage(Gtk.Box):
         ext_path = _SYSTEM_EXT_DIR / uuid
         self._log(f"\n▶  Проверка зависимостей для {uuid}...\n")
         win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress(f"Удаление системного расширения...")
+        if hasattr(win, "start_progress"): win.start_progress("Удаление системного расширения...")
 
         def _do():
             r_own = subprocess.run(

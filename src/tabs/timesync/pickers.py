@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gdk, GLib, Gtk, Pango
+from gi.repository import Adw, Gdk, Gtk, Pango
 
 from ui.widgets import make_icon
-
 
 _XDG_HOME_DEFAULTS = [
     "Documents", "Документы",

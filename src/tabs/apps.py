@@ -11,20 +11,25 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk
 
-from core import backend
-from core import config
-from ui.widgets import (
-    make_button, make_scrolled_page,
-    make_status_icon, set_status_ok, set_status_error, clear_status, make_suffix_box,
-    scroll_child_into_view,
-)
-from ui.common import load_module, _MODULES_DIR
+from core import backend, config
+from ui.common import _MODULES_DIR
 from ui.dialogs import AppEditDialog
 from ui.rows import AppRow
+from ui.widgets import (
+    clear_status,
+    make_button,
+    make_scrolled_page,
+    make_status_icon,
+    make_suffix_box,
+    scroll_child_into_view,
+    set_status_error,
+    set_status_ok,
+)
 
 
 class AppsPage(Gtk.Box):
@@ -427,12 +432,10 @@ class AppsPage(Gtk.Box):
             gs.insert(0, user_group)
 
         target_item = None
-        target_group = None
         for g in gs:
             for it in g.get("items", []):
                 if it.get("id") == item_id:
                     target_item = it
-                    target_group = g
                     break
             if target_item:
                 break
@@ -460,7 +463,7 @@ class AppsPage(Gtk.Box):
 
             btn_add.set_label("Добавлено")
             self._log(f"✔ {display_name} добавлен в список\n")
-            
+
         btn_add.set_sensitive(False)
 
     def _install_pkg(self, pkg_id, install_type, btn, status):
@@ -469,7 +472,8 @@ class AppsPage(Gtk.Box):
         self._log(f"\n▶  Установка {pkg_id}...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress(f"Установка {pkg_id}...")
-        done_cb = lambda ok: self._pkg_install_done(ok, pkg_id, btn, status)
+        def done_cb(ok):
+            self._pkg_install_done(ok, pkg_id, btn, status)
         if install_type == "flatpak":
             backend.run_privileged(
                 ["flatpak", "install", "flathub", "-y", pkg_id],
@@ -926,11 +930,11 @@ class AppsPage(Gtk.Box):
         self._cancel_install = False
         self._btn_all.set_sensitive(False)
         self._btn_all.set_label("⏳  Установка...")
-        
+
         win = self.get_root()
         if hasattr(win, "start_progress"):
             win.start_progress("Массовая установка приложений...", self._cancel_all)
-            
+
         threading.Thread(target=self._worker, daemon=True).start()
 
     def _cancel_all(self):

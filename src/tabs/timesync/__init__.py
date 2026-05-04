@@ -1,1 +1,1 @@
-from .page import BorgPage
+from .page import BorgPage  # noqa: F401

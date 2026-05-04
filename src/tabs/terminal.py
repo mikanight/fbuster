@@ -7,15 +7,14 @@ import threading
 from pathlib import Path
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk
 
 from core import backend
-from core import config
-from ui.widgets import make_scrolled_page, scroll_child_into_view
 from ui.rows import SettingRow
-
+from ui.widgets import make_scrolled_page, scroll_child_into_view
 
 _ALIASES_BLOCK = r"""
 alias tm="sudo timeshift"
@@ -227,13 +226,13 @@ class TerminalPage(Gtk.Box):
         group = Adw.PreferencesGroup()
         group.set_title("Ptyxis")
         group.set_description("Современный терминал GNOME, заменяет gnome-terminal")
-        
+
         btn_all = Gtk.Button(label="Применить всё")
         btn_all.set_valign(Gtk.Align.CENTER)
         btn_all.add_css_class("suggested-action")
         btn_all.connect("clicked", self._on_apply_all)
         group.set_header_suffix(btn_all)
-        
+
         body.append(group)
 
         self._row_ptyxis_install = SettingRow(
@@ -272,7 +271,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Удаление Ptyxis...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Удаление Ptyxis...")
-        backend.run_privileged(["dnf", "remove", "-y", "ptyxis"], self._log, 
+        backend.run_privileged(["dnf", "remove", "-y", "ptyxis"], self._log,
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _check_ptyxis_default(self):
@@ -364,17 +363,17 @@ class TerminalPage(Gtk.Box):
         def _do():
             path = f"/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/{uid}/"
             schema = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:" + path
-            
+
             backend.run_gsettings(["set", schema, "name", f"'{name}'"])
             backend.run_gsettings(["set", schema, "command", f"'{cmd}'"])
             backend.run_gsettings(["set", schema, "binding", f"'{binding}'"])
-            
+
             current = self._get_custom_bindings()
             if path not in current:
                 current.append(path)
                 array_str = "[" + ", ".join(f"'{p}'" for p in current) + "]"
                 backend.run_gsettings(["set", "org.gnome.settings-daemon.plugins.media-keys", "custom-keybindings", array_str])
-            
+
             GLib.idle_add(row.set_done, True)
             GLib.idle_add(self._log, "✔  Шорткат назначен\n")
             if hasattr(win, "stop_progress"): win.stop_progress(True)
@@ -382,7 +381,7 @@ class TerminalPage(Gtk.Box):
 
     def _remove_shortcut(self, row, uid):
         row.set_working()
-        self._log(f"\n▶  Удаление шортката...\n")
+        self._log("\n▶  Удаление шортката...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Удаление шортката...")
         def _do():
@@ -392,7 +391,7 @@ class TerminalPage(Gtk.Box):
                 current.remove(path)
                 array_str = "[" + ", ".join(f"'{p}'" for p in current) + "]"
                 backend.run_gsettings(["set", "org.gnome.settings-daemon.plugins.media-keys", "custom-keybindings", array_str])
-            
+
             schema = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:" + path
             backend.run_gsettings(["reset", schema, "name"])
             backend.run_gsettings(["reset", schema, "command"])
@@ -445,7 +444,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Установка git и zsh...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Установка ZSH...")
-        backend.run_privileged(["dnf", "install", "-y", "git", "zsh"], self._log, 
+        backend.run_privileged(["dnf", "install", "-y", "git", "zsh"], self._log,
             lambda ok: (row.set_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_remove_zsh(self, row):
@@ -453,7 +452,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Удаление zsh...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Удаление ZSH...")
-        backend.run_privileged(["dnf", "remove", "-y", "zsh"], self._log, 
+        backend.run_privileged(["dnf", "remove", "-y", "zsh"], self._log,
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_install_zplug(self, row):
@@ -490,7 +489,7 @@ class TerminalPage(Gtk.Box):
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Установка ZSH по умолчанию...")
         user = os.environ.get("USER")
-        backend.run_privileged(["chsh", "-s", "/bin/zsh", user], self._log, 
+        backend.run_privileged(["chsh", "-s", "/bin/zsh", user], self._log,
             lambda ok: (row.set_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_zsh_default_undo(self, row):
@@ -499,7 +498,7 @@ class TerminalPage(Gtk.Box):
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Возврат Bash по умолчанию...")
         user = os.environ.get("USER")
-        backend.run_privileged(["chsh", "-s", "/bin/bash", user], self._log, 
+        backend.run_privileged(["chsh", "-s", "/bin/bash", user], self._log,
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
 
@@ -554,7 +553,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Установка Fastfetch...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Установка Fastfetch...")
-        backend.run_privileged(["dnf", "install", "-y", "fastfetch"], self._log, 
+        backend.run_privileged(["dnf", "install", "-y", "fastfetch"], self._log,
             lambda ok: (row.set_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_remove_fastfetch(self, row):
@@ -562,7 +561,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Удаление Fastfetch...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Удаление Fastfetch...")
-        backend.run_privileged(["dnf", "remove", "-y", "fastfetch"], self._log, 
+        backend.run_privileged(["dnf", "remove", "-y", "fastfetch"], self._log,
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_install_font(self, row):
@@ -570,7 +569,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Установка шрифта...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Установка шрифта...")
-        backend.run_privileged(["dnf", "install", "-y", "fira-code-fonts"], self._log, 
+        backend.run_privileged(["dnf", "install", "-y", "fira-code-fonts"], self._log,
             lambda ok: (row.set_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_remove_font(self, row):
@@ -578,7 +577,7 @@ class TerminalPage(Gtk.Box):
         self._log("\n▶  Удаление шрифта...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Удаление шрифта...")
-        backend.run_privileged(["dnf", "remove", "-y", "fira-code-fonts"], self._log, 
+        backend.run_privileged(["dnf", "remove", "-y", "fira-code-fonts"], self._log,
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _check_ptyxis_font(self):
@@ -670,7 +669,7 @@ class TerminalPage(Gtk.Box):
         fd, tmp_path = tempfile.mkstemp(suffix=".sh", text=True)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(_ALIASES_BLOCK.strip())
-        
+
         editor_cmd = []
         if shutil.which("gnome-text-editor"):
             editor_cmd = ["gnome-text-editor", tmp_path]
@@ -680,7 +679,7 @@ class TerminalPage(Gtk.Box):
             term = shutil.which("ptyxis") or shutil.which("gnome-terminal") or shutil.which("kgx")
             if term:
                 editor_cmd = [term, "--", "nano", tmp_path]
-        
+
         if not editor_cmd:
             editor_cmd = ["xdg-open", tmp_path]
 
@@ -707,7 +706,7 @@ class TerminalPage(Gtk.Box):
                     self._do_add_aliases(row, text)
                 except Exception as e:
                     self._log(f"✘ Ошибка чтения файла: {e}\n")
-            
+
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
 
@@ -722,13 +721,13 @@ class TerminalPage(Gtk.Box):
         def _do():
             p = Path(os.path.expanduser("~/.zshrc"))
             content = p.read_text(encoding="utf-8") if p.exists() else ""
-            
+
             final_text = text
             if "# --- Fedora Booster Aliases ---" not in final_text:
                 final_text = "# --- Fedora Booster Aliases ---\n" + final_text
             if "# ---------------------------" not in final_text:
                 final_text = final_text.strip() + "\n# ---------------------------"
-            
+
             if not final_text.startswith("\n"):
                 final_text = "\n" + final_text
             if not final_text.endswith("\n"):
@@ -765,7 +764,7 @@ class TerminalPage(Gtk.Box):
                             if line.strip() == "# ---------------------------":
                                 skip = False
                         new_content = "\n".join(new_lines) + "\n"
-                    
+
                     p.write_text(new_content, encoding="utf-8")
             GLib.idle_add(row.set_undo_done, True)
             GLib.idle_add(self._log, "✔  Алиасы удалены\n")
@@ -788,23 +787,23 @@ class TerminalPage(Gtk.Box):
                     return True
             except Exception:
                 pass
-            
+
             GLib.idle_add(row.set_working)
             GLib.idle_add(self._log, f"▶  {action_name}...\n")
-            
+
             try:
                 ok = sync_fn()
             except Exception as e:
                 GLib.idle_add(self._log, f"✘  Ошибка: {e}\n")
                 ok = False
-            
+
             GLib.idle_add(row.set_done, ok)
             GLib.idle_add(self._log, f"{'✔' if ok else '✘'}  {action_name}\n")
             return ok
 
-        run_step(self._row_ptyxis_install, "Установка Ptyxis", 
+        run_step(self._row_ptyxis_install, "Установка Ptyxis",
             lambda: backend.run_privileged_sync(["bash", "-c", "dnf remove -y gnome-terminal 2>/dev/null || true && dnf install -y ptyxis"], self._log))
-        
+
         run_step(self._row_ptyxis_default, "Ptyxis по умолчанию",
             lambda: subprocess.run(["xdg-mime", "default", "org.gnome.Ptyxis.desktop", "x-scheme-handler/terminal"]).returncode == 0)
 
@@ -823,28 +822,28 @@ class TerminalPage(Gtk.Box):
 
         run_step(self._row_shortcut_1, "Шорткат Terminal 1",
             lambda: _sync_shortcut("custom0", "Terminal", "ptyxis --new-window", "<Control><Alt>t"))
-        
+
         run_step(self._row_shortcut_2, "Шорткат Terminal 2",
             lambda: _sync_shortcut("custom1", "Terminal Super", "ptyxis --new-window", "<Super>Return"))
 
         run_step(self._row_zsh_install, "Установка ZSH",
             lambda: backend.run_privileged_sync(["dnf", "install", "-y", "git", "zsh"], self._log))
-        
+
         run_step(self._row_zplug_install, "Установка zplug",
             lambda: subprocess.run(["git", "clone", "https://github.com/zplug/zplug", os.path.expanduser("~/.zplug")], capture_output=True).returncode == 0)
-        
+
         run_step(self._row_zsh_default, "ZSH по умолчанию",
             lambda: backend.run_privileged_sync(["chsh", "-s", "/bin/zsh", os.environ.get("USER")], self._log))
 
         run_step(self._row_fastfetch_install, "Установка Fastfetch",
             lambda: backend.run_privileged_sync(["dnf", "install", "-y", "fastfetch"], self._log))
-        
+
         run_step(self._row_font_install, "Установка шрифта",
             lambda: backend.run_privileged_sync(["dnf", "install", "-y", "fira-code-fonts"], self._log))
-        
+
         run_step(self._row_font_apply, "Применение шрифта",
             lambda: subprocess.run(["dconf", "write", "/org/gnome/Ptyxis/Profiles/default/font-name", "'FiraCode Nerd Font Regular 14'"]).returncode == 0)
-        
+
         def _sync_ff_config():
             p = Path(os.path.expanduser("~/.config/fastfetch/config.jsonc"))
             p.parent.mkdir(parents=True, exist_ok=True)

@@ -13,7 +13,14 @@ from gi.repository import Adw, GLib, Gtk
 
 from core import backend
 from core.sched_ext import KERNEL_IMAGE_SCHED_EXT, has_sched_ext
-from ui.widgets import make_button, make_icon, make_status_icon, set_status_ok, set_status_error, clear_status
+from ui.widgets import (
+    clear_status,
+    make_button,
+    make_icon,
+    make_status_icon,
+    set_status_error,
+    set_status_ok,
+)
 
 
 class SchedExtSupportSection:

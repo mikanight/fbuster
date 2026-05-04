@@ -7,17 +7,23 @@ import urllib.request
 import zipfile
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, GLib, Gtk
 
-from core import backend
-from core import config
-from ui.widgets import (
-    make_icon, make_button, make_status_icon,
-    set_status_ok, set_status_error, clear_status, make_suffix_box, make_scrolled_page,
-)
+from core import backend, config
 from ui.rows import TaskRow
+from ui.widgets import (
+    clear_status,
+    make_button,
+    make_icon,
+    make_scrolled_page,
+    make_status_icon,
+    make_suffix_box,
+    set_status_error,
+    set_status_ok,
+)
 
 _AAC_URL = "https://github.com/Toxblh/davinci-linux-aac-codec/releases/latest/download/aac_encoder_plugin-linux-bundle.tar.gz"
 _POSTINSTALL_CMD = [
@@ -332,7 +338,7 @@ class DaVinciPage(Gtk.Box):
         name = os.path.basename(self._dv_installer_path)
         self._log(f"\n▶  Установка DaVinci Resolve из {name}...\n")
         win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress(f"Установка DaVinci Resolve...")
+        if hasattr(win, "start_progress"): win.start_progress("Установка DaVinci Resolve...")
         threading.Thread(target=self._do_install_from_file, daemon=True).start()
 
     def _do_install_from_file(self):

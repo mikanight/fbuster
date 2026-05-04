@@ -8,6 +8,7 @@ import tempfile
 import threading
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk
@@ -15,7 +16,6 @@ from gi.repository import Adw, GLib, Gtk
 from core import backend
 from core.sched_ext import has_sched_ext
 from ui.rows import SettingRow
-from ui.widgets import make_icon
 
 _SCX_METEOR_BIN = "/usr/local/bin/scx_meteor"
 _SCX_METEOR_SERVICE = "/etc/systemd/system/scx_meteor.service"

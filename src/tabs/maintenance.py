@@ -6,18 +6,24 @@ import socket
 import threading
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, GLib, Gtk
 
-from core import backend
-from core import config
-from ui.widgets import (
-    make_button, make_scrolled_page, make_icon, make_status_icon,
-    set_status_ok, set_status_error, clear_status, scroll_child_into_view,
-)
+from core import backend, config
 from ui.common import load_module
 from ui.rows import TaskRow
+from ui.widgets import (
+    clear_status,
+    make_button,
+    make_icon,
+    make_scrolled_page,
+    make_status_icon,
+    scroll_child_into_view,
+    set_status_error,
+    set_status_ok,
+)
 
 
 class CacheTaskRow(Adw.ExpanderRow):
@@ -166,11 +172,11 @@ class CacheTaskRow(Adw.ExpanderRow):
 
         cmd_str = "shopt -s nullglob; rm -rf " + " ".join(targets)
         self._log(f"\n▶  Очистка кэша ({len(targets)} путей)...\n")
-        
+
         win = self.get_root()
         if hasattr(win, "start_progress"):
             win.start_progress("Очистка кэша...")
-        
+
         GLib.timeout_add(110, self._pulse)
         backend.run_privileged(["bash", "-c", cmd_str], self._log, self._finish)
 
@@ -193,11 +199,11 @@ class CacheTaskRow(Adw.ExpanderRow):
         self._btn.set_label("Повтор")
         self._btn.set_sensitive(True)
         self._log(f"{'✔  Кэш очищен' if ok else '✘  Ошибка очистки'}\n")
-        
+
         win = self.get_root()
         if hasattr(win, "stop_progress"):
             win.stop_progress(ok)
-            
+
         if self._on_progress:
             self._on_progress()
 
@@ -637,11 +643,11 @@ class MaintenancePage(Gtk.Box):
         self._cancel_tasks = False
         self._btn_all.set_sensitive(False)
         self._btn_all.set_label("⏳  Выполняется...")
-        
+
         win = self.get_root()
         if hasattr(win, "start_progress"):
             win.start_progress("Выполнение задач обслуживания...", self._cancel_tasks_fn)
-            
+
         threading.Thread(target=self._worker, daemon=True).start()
 
     def _cancel_tasks_fn(self):

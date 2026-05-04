@@ -7,7 +7,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, GLib, Gdk, Gtk
+from gi.repository import Adw, Gdk, GLib, Gtk
 
 from core.packages import InstallPreview, get_install_preview
 
@@ -461,7 +461,6 @@ class InstallPreviewDialog(Adw.Window):
 
         title_lbl = Gtk.Label(label=title)
         title_lbl.set_halign(Gtk.Align.START)
-        attrs = title_lbl.get_attributes() or None
         title_lbl.add_css_class("heading")
         if style == "error":
             title_lbl.add_css_class("error")

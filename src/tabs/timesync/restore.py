@@ -6,19 +6,21 @@ import threading
 from pathlib import Path
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk, Pango
 
 from core import backend
 from ui.widgets import make_icon
+
 from .summary import _fmt_size
 
 
 class BtrfsRestoreDialog(Adw.AlertDialog):
     def __init__(self, parent, snapshot: dict, log_fn):
         super().__init__(
-            heading=f"Восстановить снимок",
+            heading="Восстановить снимок",
             body=f"Снимок: {snapshot.get('date_str', snapshot.get('name'))}",
         )
         self._snapshot = snapshot

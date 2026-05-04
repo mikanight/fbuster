@@ -4,7 +4,7 @@ import os
 import shlex
 import tempfile
 
-from .privileges import run_privileged, OnLine, OnDone
+from .privileges import OnDone, OnLine, run_privileged
 
 
 def apply_vm_dirty(on_log: OnLine, on_done: OnDone) -> None:

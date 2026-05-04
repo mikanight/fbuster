@@ -1,5 +1,6 @@
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gtk
@@ -224,19 +225,24 @@ class SourceEditPage(Adw.NavigationPage):
 
     def _fill(self, src):
         cmd = src.get("cmd", [])
+        src_type = "script"
+        check_id = ""
+        ck = "path"
+        pkg = ""
         if cmd and cmd[0] == "flatpak":
-            t = "flatpak"
+            src_type = "flatpak"
             pkg = cmd[4] if len(cmd) > 4 else ""
         elif cmd and cmd[0] == "epm" and len(cmd) > 1 and cmd[1] == "play":
-            t = "epm_play"
+            src_type = "epm_play"
             pkg = cmd[-1]
         elif cmd and cmd[0] == "epm":
-            t = "epm_install"
+            src_type = "epm_install"
             pkg = cmd[-1]
         elif cmd and cmd[0] in ("apt-get", "apt", "dnf", "dnf5"):
-            t = "apt"
+            src_type = "apt"
             pkg = cmd[-1]
-        elif src_type == "apt":
+
+        if src_type == "apt":
             cmd = ["apt-get", "install", "-y", pkg]
             ck = "rpm"
         else:

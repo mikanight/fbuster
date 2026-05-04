@@ -10,11 +10,11 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 import gi
+
 gi.require_version("GLib", "2.0")
 from gi.repository import GLib
 
 from core import config
-
 
 OPTIONAL_EXCLUDES = [
     {
@@ -765,7 +765,7 @@ def generate_flatpak_meta(target_dir: Path, source_mode: int | None = 0) -> bool
                 ["flatpak", "list", "--app", "--columns=application"],
                 capture_output=True, text=True, encoding="utf-8", timeout=15,
             )
-            installed_ids = {l.strip() for l in r1.stdout.splitlines() if l.strip()}
+            installed_ids = {line.strip() for line in r1.stdout.splitlines() if line.strip()}
             if source_mode == 1:
                 booster_ids = [app_id for _, app_id in flatpak_apps_from_booster_list()]
                 all_ids = [app_id for app_id in booster_ids if app_id in installed_ids]
@@ -818,7 +818,7 @@ def generate_system_meta(target_dir: Path, include_packages: bool = True) -> boo
             if r1.returncode == 0:
                 names = sorted(set(r1.stdout.splitlines()))
                 (target_dir / "packages.txt").write_text("\n".join(names), encoding="utf-8")
-            
+
         r2 = subprocess.run(
             ["dconf", "dump", "/"],
             capture_output=True, text=True, encoding="utf-8", timeout=10,

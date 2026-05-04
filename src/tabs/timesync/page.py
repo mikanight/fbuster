@@ -6,24 +6,35 @@ import threading
 from pathlib import Path
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, GLib, Gtk, Pango
 
-from core import backend
-from core import config
+from core import backend, config
 from core.borg import _write_borg_env_file
-from ui.widgets import (
-    make_icon, make_scrolled_page, make_button,
-    make_status_icon, set_status_ok, set_status_error, clear_status,
-    make_suffix_box,
-)
 from ui.rows import ensure_ab_source_badge_styles
-from .restore import BtrfsRestoreDialog, BorgArchiveBrowserDialog, BorgRestoreDialog
-from .pickers import HomeDirPickerDialog, FlatpakDataPickerDialog, FolderPickerDialog
-from .summary import BorgBackupSummaryDialog, _fmt_size
-from .mirror import MirrorPage
+from ui.widgets import (
+    clear_status,
+    make_button,
+    make_icon,
+    make_scrolled_page,
+    make_status_icon,
+    make_suffix_box,
+    set_status_error,
+    set_status_ok,
+)
+
 from .manual import build_terminal_page
+from .mirror import MirrorPage
+from .pickers import (
+    _XDG_HOME_DEFAULTS,
+    FlatpakDataPickerDialog,
+    FolderPickerDialog,
+    HomeDirPickerDialog,
+)
+from .restore import BorgArchiveBrowserDialog, BorgRestoreDialog, BtrfsRestoreDialog
+from .summary import BorgBackupSummaryDialog, _fmt_size
 
 _BTRFS_INTERVALS = [
     (1, "Каждый час"),
@@ -1607,7 +1618,7 @@ class BorgPage(Gtk.Box):
         if initialized:
             self._update_sections_visibility()
             threading.Thread(target=self._load_archives_thread, daemon=True).start()
-    
+
     def _btrfs_refresh_list(self):
         self._btrfs_loading_spinner.set_spinning(True)
         self._btrfs_loading_spinner.set_visible(True)
@@ -1787,8 +1798,6 @@ class BorgPage(Gtk.Box):
         row = Adw.ExpanderRow()
         row.set_title(start or name)
         row.set_subtitle(subtitle)
-
-        repo_path = config.state_get("borg_repo_path", "") or ""
 
         btn_browse = Gtk.Button(label="Просмотреть")
         btn_browse.add_css_class("flat")
@@ -2275,7 +2284,7 @@ class BorgPage(Gtk.Box):
     def _on_config_dirs_picked(self, dirs):
         config.state_set("borg_config_dirs", dirs)
         self._update_config_subtitle()
-    
+
     def _on_flatpak_data_toggled(self, sw, _):
         config.state_set("borg_src_flatpak_data", sw.get_active())
         self._update_flatpak_data_subtitle()
@@ -2300,7 +2309,7 @@ class BorgPage(Gtk.Box):
         selected = config.state_get("borg_flatpak_data_filter", all_dirs)
         if selected is None:
             selected = all_dirs
-        
+
         icons_thread = threading.Thread(target=self._load_flatpak_icons, args=(all_dirs, selected), daemon=True)
         icons_thread.start()
 
@@ -2319,7 +2328,7 @@ class BorgPage(Gtk.Box):
             all_dirs = [p.name for p in var_app.iterdir() if p.is_dir()] if var_app.exists() else []
         except Exception:
             all_dirs = []
-        
+
         if sorted(dirs) == sorted(all_dirs):
             config.state_set("borg_flatpak_data_filter", None)
         else:
@@ -2336,7 +2345,7 @@ class BorgPage(Gtk.Box):
             current.append(path)
             config.state_set("borg_custom_paths", current)
             self._add_custom_path_row(path)
-    
+
     def _on_pick_custom_path(self, _btn):
         try:
             fd = Gtk.FileDialog()
@@ -2396,9 +2405,9 @@ class BorgPage(Gtk.Box):
         else:
             ok = backend.disable_systemd_timer()
         sw.set_active(ok if active else not ok)
-        self._log(f"✔  Готово\n" if ok else "✘  Ошибка\n")
+        self._log("✔  Готово\n" if ok else "✘  Ошибка\n")
         self._refresh_status_thread()
-        
+
     def _build_btrfs_tab(self):
         scroll, body = make_scrolled_page()
 
@@ -2484,12 +2493,12 @@ class BorgPage(Gtk.Box):
         schedule_group = Adw.PreferencesGroup(title="Расписание")
         schedule_group.set_margin_top(16)
         body.append(schedule_group)
-        
+
         self._btrfs_sw_auto = Adw.SwitchRow(title="Автоматические снимки")
         self._btrfs_sw_auto.set_active(config.state_get("btrfs_auto_enabled", False))
         self._btrfs_sw_auto.connect("notify::active", self._btrfs_on_auto_toggled)
         schedule_group.add(self._btrfs_sw_auto)
-        
+
         interval_model = Gtk.StringList.new([label for _, label in _BTRFS_INTERVALS])
         self._btrfs_interval_row = Adw.ComboRow(title="Интервал", model=interval_model)
         saved_interval = config.state_get("btrfs_auto_interval_hours", 1)
@@ -2500,7 +2509,7 @@ class BorgPage(Gtk.Box):
             self._btrfs_interval_row.set_selected(0)
         self._btrfs_interval_row.connect("notify::selected", self._btrfs_on_interval_changed)
         schedule_group.add(self._btrfs_interval_row)
-        
+
         self._btrfs_keep_row = Adw.SpinRow.new_with_range(1, 1000, 1)
         self._btrfs_keep_row.set_title("Хранить снимков")
         self._btrfs_keep_row.set_value(config.state_get("btrfs_keep_count", 24))
@@ -2511,17 +2520,17 @@ class BorgPage(Gtk.Box):
         scroll.connect("map", lambda _: self._btrfs_refresh_list())
 
         return scroll, body
-        
+
     def _btrfs_update_schedule_ui(self, active: bool):
         self._btrfs_interval_row.set_sensitive(active)
         self._btrfs_keep_row.set_sensitive(active)
-        
+
     def _btrfs_on_create(self, _btn):
         win = self.get_root()
         if hasattr(win, "start_progress"):
             win.start_progress("Создание Btrfs снимка...")
         self._log("\n▶  Создание Btrfs снимка...\n")
-        
+
         def on_done(ok):
             if hasattr(win, "stop_progress"):
                 win.stop_progress(ok)
@@ -2529,9 +2538,9 @@ class BorgPage(Gtk.Box):
             if ok:
                 self._btrfs_prune_old()
                 self._btrfs_refresh_list()
-                
+
         backend.btrfs_snapshot_create(self._log, on_done)
-        
+
     def _btrfs_on_delete_multi(self, _btn):
         snapshots = getattr(self, "_btrfs_snapshots", [])
         if not snapshots:
@@ -2604,7 +2613,7 @@ class BorgPage(Gtk.Box):
     def _btrfs_on_restore(self, snapshot: dict):
         dialog = BtrfsRestoreDialog(self.get_root(), snapshot, self._log)
         dialog.present()
-        
+
     def _btrfs_on_auto_toggled(self, sw, _):
         active = sw.get_active()
         config.state_set("btrfs_auto_enabled", active)
@@ -2616,11 +2625,11 @@ class BorgPage(Gtk.Box):
         interval = _BTRFS_INTERVALS[idx][0]
         config.state_set("btrfs_auto_interval_hours", interval)
         self._btrfs_apply_schedule_changes()
-        
+
     def _btrfs_on_keep_count_changed(self, row, _):
         config.state_set("btrfs_keep_count", row.get_value())
         self._btrfs_apply_schedule_changes()
-        
+
     def _btrfs_apply_schedule_changes(self):
         active = config.state_get("btrfs_auto_enabled", False)
         if active:
@@ -2643,6 +2652,6 @@ class BorgPage(Gtk.Box):
                 to_delete = snapshots[keep_count:]
                 self._log(f"\nℹ️  Удаление {len(to_delete)} старых снимков...\n")
                 for snap in to_delete:
-                    backend.btrfs_snapshot_delete(snap['path'], lambda l: None, lambda ok: None)
+                    backend.btrfs_snapshot_delete(snap['path'], lambda _line: None, lambda ok: None)
 
         backend.btrfs_snapshot_list(on_done)

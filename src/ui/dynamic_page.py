@@ -1,31 +1,41 @@
 from __future__ import annotations
 
-import shutil
 import os
+import shutil
 import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, GLib, Gtk
 
-from core import backend
-from core import config
-from tabs.terminal_actions import (
-    check_ptyxis_default, set_ptyxis_default,
-    check_shortcut_1, set_shortcut_1,
-    check_shortcut_2, set_shortcut_2,
-    check_zsh_default, set_zsh_default,
-    install_zplug, check_ptyxis_font,
-    install_fastfetch_config, check_zsh_aliases, add_zsh_aliases,
-)
+from core import backend, config
 from tabs.amd_actions import (
-    check_overclock, enable_overclock,
-    check_wheel, setup_lact_wheel,
-    apply_lact_config, confirm_reboot,
+    apply_lact_config,
+    check_overclock,
+    check_wheel,
+    confirm_reboot,
+    enable_overclock,
+    setup_lact_wheel,
+)
+from tabs.terminal_actions import (
+    add_zsh_aliases,
+    check_ptyxis_default,
+    check_ptyxis_font,
+    check_shortcut_1,
+    check_shortcut_2,
+    check_zsh_aliases,
+    check_zsh_default,
+    install_fastfetch_config,
+    install_zplug,
+    set_ptyxis_default,
+    set_shortcut_1,
+    set_shortcut_2,
+    set_zsh_default,
 )
 
 BUILTIN_REGISTRY: dict[str, Callable] = {
@@ -50,9 +60,14 @@ BUILTIN_REGISTRY: dict[str, Callable] = {
     "confirm_reboot":           confirm_reboot,
 }
 from ui.widgets import (
-    make_icon, make_button, make_status_icon,
-    set_status_ok, set_status_error, clear_status, make_suffix_box,
+    clear_status,
+    make_button,
+    make_icon,
+    make_status_icon,
+    make_suffix_box,
     scroll_child_into_view,
+    set_status_error,
+    set_status_ok,
 )
 
 

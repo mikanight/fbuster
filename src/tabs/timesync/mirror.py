@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, GLib, Gtk
@@ -18,13 +19,19 @@ from core import backend, config
 from core.mirror import (
     OPTIONAL_ITEMS,
     detect_mirror_type,
-    get_dest_filesystem, get_root_device, get_root_filesystem, get_root_partition_disk,
+    get_dest_filesystem,
+    get_root_device,
+    get_root_filesystem,
+    get_root_partition_disk,
     is_uefi,
-    mirror_btrfs_send, mirror_btrfs_stream, mirror_ext4_rsync, mirror_ext4_tar,
-    restore_to_disk, save_partition_table,
+    mirror_btrfs_send,
+    mirror_btrfs_stream,
+    mirror_ext4_rsync,
+    mirror_ext4_tar,
+    restore_to_disk,
+    save_partition_table,
 )
 from ui.widgets import make_button, make_icon, make_scrolled_page
-
 
 _mirror_warn_css = Gtk.CssProvider()
 _mirror_warn_css.load_from_data(b"""
@@ -916,7 +923,7 @@ class MirrorPage(Gtk.Box):
             'echo "▶  Очистка сигнатур..."',
             'wipefs -a "$TARGET"',
             'echo "▶  Создание новой таблицы разделов GPT..."',
-            f"cat <<'EOF' | sfdisk \"$TARGET\"",
+            "cat <<'EOF' | sfdisk \"$TARGET\"",
             part_script.rstrip("\n"),
             "EOF",
             "partprobe \"$TARGET\" || true",
@@ -1127,7 +1134,7 @@ class MirrorPage(Gtk.Box):
         if t == "rsync":
             self._restore_info_row.set_subtitle(f"Тип: rsync (EXT4)  ·  Раздел: {fs}")
         elif t == "tar":
-            self._restore_info_row.set_subtitle(f"Тип: tar.gz (EXT4)")
+            self._restore_info_row.set_subtitle("Тип: tar.gz (EXT4)")
         elif t == "btrfs":
             self._restore_info_row.set_subtitle(f"Тип: btrfs stream  ·  Субволюмы: {', '.join(subvols)}")
         elif t == "btrfs_recv":

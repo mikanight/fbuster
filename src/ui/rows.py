@@ -4,6 +4,7 @@ import subprocess
 import threading
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
@@ -106,13 +107,16 @@ def ensure_ab_source_badge_styles() -> None:
     _ab_source_badge_css_registered = True
 
 
-from core import backend
-from core import config
+from core import backend, config
 from core.checks import invalidate_flatpak_cache
 from ui.install_preview_dialog import InstallPreviewDialog
 from ui.widgets import (
-    make_icon, make_button, make_status_icon,
-    set_status_ok, set_status_error, clear_status, make_suffix_box,
+    clear_status,
+    make_button,
+    make_icon,
+    make_status_icon,
+    set_status_error,
+    set_status_ok,
 )
 
 
@@ -281,7 +285,7 @@ class AppRow(Adw.ActionRow):
     def __init__(self, app, log_fn, on_change_cb):
         super().__init__()
         self._app = app
-        
+
         if "sources" in app:
             self._sources = app["sources"]
         elif "source" in app:
@@ -397,13 +401,13 @@ class AppRow(Adw.ActionRow):
     def _check(self):
         installed = False
         installed_idx = -1
-        
+
         for i, src in enumerate(self._sources):
             if backend.check_app_installed(src):
                 installed = True
                 installed_idx = i
                 break
-        
+
         self._installed_source_index = installed_idx
         config.state_set(self._state_key, installed)
         GLib.idle_add(self._set_installed_ui, installed)
@@ -529,7 +533,7 @@ class AppRow(Adw.ActionRow):
             self._btn.remove_css_class("flat")
             self._btn.add_css_class("suggested-action")
             self._trash_btn.set_visible(False)
-            
+
         if self._on_change:
             self._on_change()
 
@@ -634,14 +638,14 @@ class AppRow(Adw.ActionRow):
     def _on_uninstall(self, _):
         if self._installing:
             return
-            
+
         idx = self._installed_source_index
         if idx < 0:
             idx = self._selected_source_index
-        
+
         if idx < 0 or idx >= len(self._sources):
             idx = 0
-            
+
         if not self._sources:
              return
 
@@ -652,7 +656,7 @@ class AppRow(Adw.ActionRow):
         self._prog.set_visible(True)
         self._prog.set_fraction(0.0)
         GLib.timeout_add(120, self._pulse)
-        
+
         kind, pkg = src["check"]
         if kind == "flatpak":
             if isinstance(pkg, str):

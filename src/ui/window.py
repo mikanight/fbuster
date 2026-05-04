@@ -13,12 +13,12 @@ import time
 from pathlib import Path
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 
-from core import backend
-from core import config
+from core import backend, config
 from core.checks import invalidate_app_detection_caches
 
 _FEDORA_BOOSTER_GUIDE_URL = "https://fedoraproject.org/wiki/Fedora_Booster"
@@ -29,16 +29,16 @@ _BORG_CREATE_PROGRESS_RE = re.compile(
     r"(?:[\d.,]+\s+%\s+)?"
     r"(\d+)\s+N\s*(.*)$"
 )
-from tabs.setup import SetupPage
-from tabs.apps import AppsPage
-from tabs.extensions import ExtensionsPage
-from tabs.terminal import TerminalPage
-from tabs.davinci import DaVinciPage
 from tabs.amd import AmdPage
-from tabs.maintenance import MaintenancePage
-from tabs.tweaks import TweaksPage
+from tabs.apps import AppsPage
+from tabs.davinci import DaVinciPage
+from tabs.extensions import ExtensionsPage
 from tabs.flatpak import FlatpakPage
+from tabs.maintenance import MaintenancePage
+from tabs.setup import SetupPage
+from tabs.terminal import TerminalPage
 from tabs.timesync import BorgPage
+from tabs.tweaks import TweaksPage
 
 
 class FedoraBoosterWindow(Adw.ApplicationWindow):

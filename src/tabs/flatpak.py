@@ -9,14 +9,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk
 
 from core import backend
-from core import config
 from ui.common import load_module
-from ui.rows import TaskRow, SettingRow
+from ui.rows import SettingRow, TaskRow
 from ui.widgets import make_icon, make_scrolled_page, make_suffix_box, scroll_child_into_view
 
 

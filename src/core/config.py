@@ -6,7 +6,6 @@ import traceback
 import urllib.request
 from pathlib import Path
 
-
 CONFIG_DIR  = Path.home() / ".config" / "altbooster"
 CONFIG_FILE = CONFIG_DIR / "window.json"
 STATE_FILE  = CONFIG_DIR / "state.json"
