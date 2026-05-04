@@ -396,6 +396,18 @@ class SetupPage(Gtk.Box):
 
         self._papirus_row = self._create_papirus_row()
 
+        filemanager_rows = [
+            ("folder-symbolic",    "Настройка Nautilus",    "Сортировка папок первыми, создание ссылок, удаление",  "Включить",  self._on_nautilus,              _check_nautilus,                        "setting_nautilus", "Активировано", self._on_nautilus_undo, "Отключить"),
+            ("media-flash-symbolic", "Кэш копирования",      "vm.dirty_bytes/background_bytes = 64 MB (ускоряет копирование)", "Включить",  self._on_vm_dirty,             backend.is_vm_dirty_optimized,           "setting_vm_dirty", "Активировано", self._on_vm_dirty_undo, "Отключить"),
+            ("system-run-symbolic",  "Nautilus Admin",        "Пункт «Открыть от root» в контекстном меню Nautilus",   "Установить", self._on_install_nautilus_admin, lambda: backend.check_app_installed({"check": ["rpm", "nautilus-admin-gtk4"]}), "setting_nautilus_admin", "Установлено", self._on_remove_nautilus_admin, "Удалить"),
+            ("folder-symbolic",      "Sushi — предпросмотр",  "Быстрый предпросмотр файлов через пробел в Nautilus",     "Установить", self._on_install_sushi,         lambda: backend.check_app_installed({"check": ["rpm", "sushi"]}), "setting_sushi", "Установлено", self._on_remove_sushi, "Удалить"),
+            ("folder-symbolic",      "f3d — 3D превью",       "Предпросмотр 3D-моделей прямо в Nautilus",                "Установить", self._on_install_f3d,           lambda: backend.check_app_installed({"check": ["rpm", "f3d"]}), "setting_f3d", "Установлено", self._on_remove_f3d, "Удалить"),
+        ]
+
+        self._r_naut, self._r_dirty, self._r_naut_admin, self._r_sushi, self._r_f3d = [
+            SettingRow(*r) for r in filemanager_rows
+        ]
+
         for r in (self._papirus_row, self._r_naut, self._r_dirty, self._r_naut_admin, self._r_sushi, self._r_f3d):
             group.add(r)
 

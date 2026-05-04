@@ -29,6 +29,7 @@ include = ["core*", "ui*", "tabs*", "modules*"]
 
 [tool.setuptools.package-data]
 "modules" = ["*.json"]
+"ui" = ["*.css"]
 
 [tool.ruff]
 line-length = 100

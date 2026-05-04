@@ -1,7 +1,72 @@
-"""Фасад: реэкспорт публичного API core для вкладок (одна точка импорта).
+"""Фасад: реэкспорт публичного API core для вкладок (одна точка импорта)."""
 
-Новый код по возможности импортируйте из подмодулей (privileges, borg, …),
-чтобы не раздувать граф зависимостей при статическом анализе.
-"""
-
-
+from core.checks import (
+    check_app_installed,
+    is_aac_installed,
+    is_davinci_installed,
+    is_drive_menu_patched,
+    is_fairlight_installed,
+    is_flathub_enabled,
+    is_fractional_scaling_enabled,
+    is_fstrim_enabled,
+    is_journal_optimized,
+    is_system_busy,
+    is_vm_dirty_optimized,
+)
+from core.privileges import (
+    cancel_current,
+    run_epm,
+    run_epm_sync,
+    run_privileged,
+    run_privileged_sync,
+    start_pkexec_shell,
+)
+from core.gsettings import gsettings_get, run_gsettings
+from core.borg import (
+    DEFAULT_EXCLUDES,
+    OPTIONAL_EXCLUDES,
+    archive_stats_dedup_bytes,
+    borg_archive_info,
+    borg_check,
+    borg_compact,
+    borg_create,
+    borg_delete_archive,
+    borg_estimate_create,
+    borg_export_tar,
+    borg_extract,
+    borg_generate_ssh_key,
+    borg_get_pubkey,
+    borg_init,
+    borg_list,
+    borg_list_archive,
+    borg_prune,
+    borg_version,
+    disable_systemd_timer,
+    enable_systemd_timer,
+    find_gvfs_google_drive,
+    flatpak_apps_from_booster_list,
+    generate_extensions_meta,
+    generate_flatpak_meta,
+    generate_system_meta,
+    is_borg_installed,
+    is_repo_initialized,
+    is_timer_active,
+    restore_dconf_meta,
+    restore_flatpak_meta,
+    restore_packages_meta,
+    write_systemd_units,
+)
+from core.btrfs import (
+    btrfs_snapshot_create,
+    btrfs_snapshot_delete,
+    btrfs_snapshot_list,
+    btrfs_snapshot_restore,
+    btrfs_snapshot_size,
+    disable_btrfs_timer,
+    enable_btrfs_timer,
+    get_snapshots_dir,
+    is_home_on_btrfs,
+    write_btrfs_systemd_units,
+)
+from core.mirror import is_uefi, list_available_disks
+from core.tweaks import apply_vm_dirty, install_aac_codec
