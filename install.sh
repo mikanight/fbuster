@@ -1,19 +1,19 @@
 #!/bin/bash
-# ALT Booster — Install Script
+# Fedora Booster — Install Script
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_DIR="/usr/local/share/altbooster"
+APP_DIR="/usr/local/share/fedorabooster"
 ICON_DIR="/usr/local/share/icons/hicolor/scalable/apps"
 DESKTOP_DIR="/usr/local/share/applications"
-BIN="/usr/local/bin/altbooster"
+BIN="/usr/local/bin/fedorabooster"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'; BOLD='\033[1m'
 
 if [[ $EUID -ne 0 ]]; then
     DE="${XDG_CURRENT_DESKTOP:-${DESKTOP_SESSION:-unknown}}"
     if [[ ! "$DE" =~ [Gg][Nn][Oo][Mm][Ee] ]]; then
-        echo -e "${YELLOW}⚠  ALT Booster разработан для GNOME.${NC}"
+        echo -e "${YELLOW}⚠  Fedora Booster разработан для GNOME.${NC}"
         echo -e "   Обнаружено окружение: ${BOLD}${DE}${NC}"
         echo -e "   Приложение использует GTK4 + libadwaita и не тестировалось на других DE."
         echo ""
@@ -22,8 +22,6 @@ if [[ $EUID -ne 0 ]]; then
         echo ""
     fi
     echo -e "${YELLOW}🔒 Требуются права root...${NC}"
-    # На чистой установке ALT Linux sudo может быть не настроен.
-    # Пробуем использовать pkexec (запросит пароль root).
     if command -v pkexec >/dev/null 2>&1; then
         pkexec "$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")" "$@"
         exit $?
@@ -34,9 +32,9 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 echo -e "${BOLD}"
-echo "  ╔══════════════════════════════════╗"
-echo "  ║      ALT Booster  Installer      ║"
-echo "  ╚══════════════════════════════════╝"
+echo "  ╔══════════════════════════════════════╗"
+echo "  ║    Fedora Booster  Installer         ║"
+echo "  ╚══════════════════════════════════════╝"
 echo -e "${NC}"
 
 step() { echo -ne "  ${YELLOW}▶${NC} $1... "; }
@@ -67,7 +65,7 @@ ok
 # Иконки
 step "Установка иконок"
 install -d "$ICON_DIR"
-install -m 644 "$SCRIPT_DIR/icons/altbooster.svg" "$ICON_DIR/altbooster.svg"
+install -m 644 "$SCRIPT_DIR/icons/fedorabooster.svg" "$ICON_DIR/fedorabooster.svg"
 install -d "/usr/local/share/icons/hicolor/scalable/apps"
 for _svg in "$SCRIPT_DIR/icons/hicolor/scalable/apps/"*.svg; do
     install -m 644 "$_svg" "/usr/local/share/icons/hicolor/scalable/apps/"
@@ -82,40 +80,40 @@ ok
 # .desktop
 step "Создание ярлыка"
 install -d "$DESKTOP_DIR"
-cat > "$DESKTOP_DIR/altbooster.desktop" << DESKTOP
+cat > "$DESKTOP_DIR/fedorabooster.desktop" << DESKTOP
 [Desktop Entry]
-Name=ALT Booster
+Name=Fedora Booster
 GenericName=System Maintenance
-Comment=Утилита обслуживания системы ALT Linux
+Comment=Утилита обслуживания системы Fedora Linux
 Exec=$BIN
-Icon=altbooster
+Icon=fedorabooster
 Terminal=false
 Type=Application
 Categories=System;Settings;
-Keywords=system;maintenance;clean;btrfs;trim;apt;flatpak;
+Keywords=system;maintenance;clean;btrfs;trim;dnf;flatpak;
 StartupNotify=true
-StartupWMClass=ru.altbooster.app
+StartupWMClass=org.fedorabooster.app
 DESKTOP
 update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
 ok
 
 # Справка (Yelp / Mallard)
 step "Установка справки"
-install -d "/usr/local/share/help/C/altbooster"
-cp -r "$SCRIPT_DIR/help/C/"* "/usr/local/share/help/C/altbooster/"
+install -d "/usr/local/share/help/C/fedorabooster"
+cp -r "$SCRIPT_DIR/help/C/"* "/usr/local/share/help/C/fedorabooster/"
 ok
 
 # Команда в PATH
-step "Создание команды altbooster"
+step "Создание команды fedorabooster"
 cat > "$BIN" << 'BINEOF'
 #!/bin/bash
-exec python3 /usr/local/share/altbooster/altbooster.py "$@"
+exec python3 /usr/local/share/fedorabooster/altbooster.py "$@"
 BINEOF
 chmod +x "$BIN"
 ok
 
 echo ""
-echo -e "  ${GREEN}${BOLD}✅ ALT Booster успешно установлен!${NC}"
+echo -e "  ${GREEN}${BOLD}✅ Fedora Booster успешно установлен!${NC}"
 echo ""
-echo -e "  Запуск: ${BOLD}altbooster${NC}  или через меню приложений GNOME"
+echo -e "  Запуск: ${BOLD}fedorabooster${NC}  или через меню приложений GNOME"
 echo ""

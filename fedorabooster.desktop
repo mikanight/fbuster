@@ -1,0 +1,16 @@
+[Desktop Entry]
+Name=Fedora Booster
+Name[ru]=Fedora Booster
+GenericName=System Maintenance Utility
+GenericName[ru]=Утилита обслуживания системы
+Comment=System maintenance utility for Fedora Linux
+Comment[ru]=Утилита обслуживания системы Fedora Linux
+Exec=fedorabooster
+Icon=fedorabooster
+Terminal=false
+Type=Application
+Categories=System;GNOME;GTK;
+Keywords=system;maintenance;clean;btrfs;trim;dnf;flatpak;
+Keywords[ru]=система;обслуживание;очистка;btrfs;trim;dnf;flatpak;
+StartupNotify=true
+StartupWMClass=org.fedorabooster.app

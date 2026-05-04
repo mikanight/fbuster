@@ -1,0 +1,3 @@
+#!/bin/bash
+exec python3 /usr/share/fedorabooster/altbooster.py "$@"
+
