@@ -91,12 +91,9 @@ class TestRunPkexecLockCheck:
         monkeypatch.setattr(privileges, "_get_pkexec_shell", MagicMock(return_value=None))
         monkeypatch.setattr(privileges, "threading", MagicMock())
 
-        with patch.object(privileges, "_run_pkexec") as mock_pkexec:
-            pass
-
     def test_dnf_bash_commands_trigger_lock_check(self):
         with (
-            patch.object(privileges, "_wait_for_dnf_lock") as mock_wait,
+            patch.object(privileges, "_wait_for_dnf_lock"),
             patch.object(privileges, "_get_pkexec_shell", return_value=None),
             patch.object(privileges, "threading"),
         ):

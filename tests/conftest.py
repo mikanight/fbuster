@@ -3,7 +3,6 @@
 import sys
 from unittest.mock import MagicMock
 
-
 mock_gi = MagicMock()
 mock_gi.repository.GLib.idle_add = MagicMock()
 mock_gi.repository.Adw = MagicMock()

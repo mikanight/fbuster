@@ -85,7 +85,7 @@ def _parse_dnf_output(
             continue
 
         m = re.search(
-            r"(?:Total download size|Общий размер загрузок)[:]\s*(.+)",
+            r"(?:Total download size|Total size of inbound packages|Общий размер загрузок)[:]\s*(.+)",
             line,
         )
         if m:

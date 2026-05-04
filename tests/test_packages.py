@@ -2,16 +2,15 @@
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from core.packages import (
-    _detect_source_type,
-    _parse_dnf_output,
-    _extract_pkg_names,
-    get_install_preview,
     InstallPreview,
+    _detect_source_type,
+    _extract_pkg_names,
+    _parse_dnf_output,
+    get_install_preview,
 )
 
 
