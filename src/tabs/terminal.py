@@ -263,7 +263,7 @@ class TerminalPage(Gtk.Box):
         def _done(ok):
             row.set_done(ok)
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
-        backend.run_privileged(["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y ghostty"], self._log, _done)
+        backend.run_privileged(["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y --nogpgcheck ghostty"], self._log, _done)
 
     def _on_remove_ghostty(self, row):
         row.set_working()
@@ -828,7 +828,7 @@ class TerminalPage(Gtk.Box):
             return ok
 
         run_step(self._row_ghostty_install, "Установка Ghostty",
-            lambda: backend.run_privileged_sync(["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y ghostty"], self._log))
+            lambda: backend.run_privileged_sync(["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y --nogpgcheck ghostty"], self._log))
 
         run_step(self._row_ghostty_default, "Ghostty по умолчанию",
             lambda: subprocess.run(["xdg-mime", "default", "com.mitchellh.ghostty.desktop", "x-scheme-handler/terminal"]).returncode == 0)

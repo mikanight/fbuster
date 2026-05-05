@@ -17,7 +17,7 @@
           "button_label": "Установить",
           "button_done_label": "Установлен",
           "check": { "type": "which", "value": "ghostty" },
-          "action": { "type": "privileged", "cmd": ["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y ghostty"] }
+          "action": { "type": "privileged", "cmd": ["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y --nogpgcheck ghostty"] }
         },
         {
           "id": "ghostty_default",
