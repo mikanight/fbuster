@@ -85,7 +85,7 @@ def main() -> int:
             self.add_action(quit_action)
             self.set_accels_for_action("app.quit", ["<Primary>q"])
             win = PlafonWindow(application=app)
-            win.ask_password()
+            win.present()
 
     try:
         return int(FedoraBoosterApp().run(sys.argv))
