@@ -96,6 +96,10 @@ def set_ghostty_default(page, _arg: Any) -> bool:
     try:
         _XDG_TERMINALS.parent.mkdir(parents=True, exist_ok=True)
         _XDG_TERMINALS.write_text(_GHOSTTY_DESKTOP + "\n")
+        subprocess.run(
+            ["xdg-mime", "default", _GHOSTTY_DESKTOP, "x-scheme-handler/terminal"],
+            capture_output=True, timeout=5,
+        )
         if page:
             page.log("\n✔  Ghostty терминал по умолчанию!\n")
         return True

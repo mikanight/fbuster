@@ -247,7 +247,7 @@ class TerminalPage(Gtk.Box):
 
         self._row_ghostty_default = SettingRow(
             "starred-symbolic", "Ghostty по умолчанию",
-            "~/.config/xdg-terminals.list", "Применить",
+            "~/.config/xdg-terminals.list + xdg-mime", "Применить",
             self._on_ghostty_default,
             self._check_ghostty_default,
             "term_ghostty_default", "Применено",
@@ -289,6 +289,7 @@ class TerminalPage(Gtk.Box):
             p = Path(os.path.expanduser("~/.config/xdg-terminals.list"))
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("com.mitchellh.ghostty.desktop\n")
+            subprocess.run(["xdg-mime", "default", "com.mitchellh.ghostty.desktop", "x-scheme-handler/terminal"])
             ok = self._check_ghostty_default()
             GLib.idle_add(row.set_done, ok)
             GLib.idle_add(self._log, "✔  Готово!\n" if ok else "✘  Ошибка\n")
@@ -304,6 +305,7 @@ class TerminalPage(Gtk.Box):
             p = Path(os.path.expanduser("~/.config/xdg-terminals.list"))
             if p.exists():
                 p.unlink()
+            subprocess.run(["xdg-mime", "default", "org.gnome.Terminal.desktop", "x-scheme-handler/terminal"])
             GLib.idle_add(row.set_undo_done, True)
             GLib.idle_add(self._log, "✔  Сброшено\n")
             if hasattr(win, "stop_progress"): win.stop_progress(True)
@@ -838,6 +840,7 @@ class TerminalPage(Gtk.Box):
             p = Path(os.path.expanduser("~/.config/xdg-terminals.list"))
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("com.mitchellh.ghostty.desktop\n")
+            subprocess.run(["xdg-mime", "default", "com.mitchellh.ghostty.desktop", "x-scheme-handler/terminal"])
             return True
 
         def _sync_shortcut(uid, name, cmd, binding):
