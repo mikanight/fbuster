@@ -180,32 +180,6 @@ def set_zsh_default(page, _arg: Any) -> bool:
     return ok
 
 
-def install_zplug(page, _arg: Any) -> bool:
-    zplug_dir = os.path.expanduser("~/.zplug")
-    if os.path.isdir(zplug_dir):
-        if page:
-            page.log("\nℹ  zplug уже установлен\n")
-        return True
-    try:
-        r = subprocess.run(
-            ["git", "clone", "https://github.com/zplug/zplug", zplug_dir],
-            capture_output=True, text=True, timeout=120,
-        )
-        ok = r.returncode == 0
-        if page:
-            if r.stdout:
-                page.log(r.stdout)
-            if r.stderr:
-                page.log(r.stderr)
-            page.log("\n✔  zplug установлен!\n" if ok else "\n✘  Ошибка установки zplug\n")
-        return ok
-    except subprocess.TimeoutExpired:
-        if page:
-            page.log("\n✘  Таймаут git clone (120 с). Проверьте соединение.\n")
-        return False
-
-
-
 def install_fastfetch_config(page, _arg: Any) -> bool:
     cfg_dir = Path.home() / ".config" / "fastfetch"
     cfg_path = cfg_dir / "plafonfetch.jsonc"

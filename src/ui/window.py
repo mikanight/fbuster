@@ -19,11 +19,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 
 from core import backend, config
-from core.checks import invalidate_app_detection_caches
 
-_FEDORA_BOOSTER_GUIDE_URL = "https://fedoraproject.org/wiki/Fedora_Booster"
-
-# borg create --progress: "2.88 GB O 1.70 GB C 1.60 GB D 14576 N path/to/file"
 _BORG_CREATE_PROGRESS_RE = re.compile(
     r"^([\d.,]+\s+\S+)\s+O\s+([\d.,]+\s+\S+)\s+C\s+([\d.,]+\s+\S+)\s+D\s+"
     r"(?:[\d.,]+\s+%\s+)?"
@@ -122,7 +118,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
 
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         root.add_css_class("ab-main-content")
-        root.append(self._build_update_banner())
 
         self._pages = {}
         for name, title, icon, PageClass in self._MAIN_TABS:
@@ -189,6 +184,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         self._search_items_built_at: float = 0.0
 
         root.append(self._content_host_overlay)
+        root.append(self._log_widget)
 
         self._split_view = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self._split_view.set_start_child(self._build_sidebar())
@@ -266,7 +262,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         )
 
         actions = [
-            ("check_update",      self._check_for_updates),
             ("help",              self._show_help),
             ("about",             self._show_about),
             ("clear_log",         self._clear_log),
@@ -368,24 +363,9 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         borg_list.connect("row-selected", _on_borg_selected)
         nav_list.connect("row-selected", _on_nav_deselects_borg)
 
-        guide_list = Gtk.ListBox()
-        guide_list.set_selection_mode(Gtk.SelectionMode.NONE)
-        guide_list.add_css_class("navigation-sidebar")
-        g_row, g_img, g_lbl = self._make_nav_row(
-            "alt_zero_guide",
-            "ALT Zero",
-            "alt-zero-book-symbolic",
-        )
-        g_row.set_activatable(True)
-        guide_list.append(g_row)
-        self._nav_images.append(g_img)
-        self._nav_labels.append(g_lbl)
-        guide_list.connect("row-activated", self._on_alt_zero_guide_sidebar_activated)
-
         self._sidebar_widget = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self._sidebar_widget.append(scroll)
         self._sidebar_widget.append(borg_list)
-        self._sidebar_widget.append(guide_list)
         self._sidebar_widget.append(self._bottom_list_widget)
         return self._sidebar_widget
 
@@ -413,32 +393,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
             box.set_margin_end(7)
             return box
 
-        upd_row = Gtk.ListBoxRow()
-        upd_row.set_name("update")
-        upd_row.set_activatable(True)
-        upd_row.set_tooltip_text("Проверить обновления")
-        upd_box = _make_row_box()
-
-        upd_icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
-        upd_icon.set_pixel_size(16)
-
-        upd_lbl = Gtk.Label(label="Обновления")
-        upd_lbl.set_xalign(0.0)
-        upd_lbl.set_hexpand(True)
-        upd_lbl.set_ellipsize(Pango.EllipsizeMode.END)
-
-        self._update_badge_dot = Gtk.Label(label="")
-        self._update_badge_dot.add_css_class("ab-update-dot")
-        self._update_badge_dot.set_valign(Gtk.Align.CENTER)
-        self._update_badge_dot.set_visible(False)
-
-        upd_box.append(upd_icon)
-        upd_box.append(upd_lbl)
-        upd_box.append(self._update_badge_dot)
-        upd_row.set_child(upd_box)
-        bottom_list.append(upd_row)
-        self._bottom_images.append(upd_icon)
-        self._bottom_labels.append(upd_lbl)
 
         menu_row = Gtk.ListBoxRow()
         menu_row.set_name("settings")
@@ -471,155 +425,8 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
 
     def _on_bottom_row_activated(self, _, row):
         name = row.get_name()
-        if name == "update":
-            self._check_for_updates()
-        elif name == "settings":
+        if name == "settings":
             self._settings_popover.popup()
-
-    def _on_alt_zero_guide_sidebar_activated(self, _list, row):
-        if row is None:
-            return
-        try:
-            Gio.AppInfo.launch_default_for_uri(_FEDORA_BOOSTER_GUIDE_URL, None)
-        except GLib.Error:
-            pass
-
-    def _on_window_is_active(self, _win, _pspec):
-        if not self.get_property("is-active"):
-            return
-        now = time.monotonic()
-        if now - self._last_app_detection_cache_flush >= 5.0:
-            self._last_app_detection_cache_flush = now
-            invalidate_app_detection_caches()
-        if self._stack.get_visible_child_name() != "flatpak":
-            return
-        page = self._pages.get("flatpak")
-        if page is not None and hasattr(page, "on_window_is_active"):
-            page.on_window_is_active()
-
-    def _on_stack_child_changed(self, stack, _pspec):
-        name = stack.get_visible_child_name()
-        if name == "borg":
-            self._nav_list.unselect_all()
-            self._borg_list.select_row(self._borg_row)
-        else:
-            self._borg_list.unselect_all()
-            for row in self._nav_rows:
-                if row.get_name() == name:
-                    self._nav_list.select_row(row)
-                    break
-        page = self._pages.get(name) if name else None
-        if page is not None and hasattr(page, "on_tab_visible"):
-            page.on_tab_visible()
-
-    def _on_nav_row_selected(self, _, row):
-        if row is not None:
-            self._stack.set_visible_child_name(row.get_name())
-
-    _ICON_SIZE_WITH_LABELS = 16
-    _ICON_SIZE_ICONS_ONLY  = 21
-    _SIDEBAR_ICONS_ONLY_WIDTH = 44
-    _SIDEBAR_LABELS_THRESHOLD = 110
-
-    def _apply_tab_label_visibility(self, show: bool | None = None, from_drag: bool = False):
-        if show is None:
-            show = config.state_get("show_tab_labels", True)
-        icon_size = self._ICON_SIZE_WITH_LABELS if show else self._ICON_SIZE_ICONS_ONLY
-
-        for img, lbl in zip(
-            self._nav_images + self._bottom_images,
-            self._nav_labels + self._bottom_labels,
-            strict=True,
-        ):
-            img.set_pixel_size(icon_size)
-            lbl.set_visible(show)
-
-        self._version_label_sidebar.set_visible(show)
-
-        if show:
-            self._sidebar_widget.set_size_request(90, -1)
-            self._bottom_list_widget.set_size_request(90, -1)
-            if not from_drag:
-                saved = getattr(self, "_sidebar_saved_width", None)
-                if saved:
-                    GLib.idle_add(self._split_view.set_position, saved)
-        else:
-            if not from_drag:
-                self._sidebar_saved_width = self._split_view.get_position()
-            self._sidebar_widget.set_size_request(self._SIDEBAR_ICONS_ONLY_WIDTH, -1)
-            self._bottom_list_widget.set_size_request(self._SIDEBAR_ICONS_ONLY_WIDTH, -1)
-            GLib.idle_add(self._split_view.set_position, self._SIDEBAR_ICONS_ONLY_WIDTH)
-
-    def _on_sidebar_position_changed(self, paned, *_):
-        pos = paned.get_position()
-        currently_showing = bool(self._nav_labels and self._nav_labels[0].get_visible())
-        should_show = pos > self._SIDEBAR_LABELS_THRESHOLD
-
-        if should_show == currently_showing:
-            return
-
-        if not should_show:
-            self._sidebar_saved_width = pos
-
-        config.state_set("show_tab_labels", should_show)
-        self._apply_tab_label_visibility(show=should_show, from_drag=True)
-
-    def _on_show_tab_labels_changed(self, action, state):
-        action.set_state(state)
-        config.state_set("show_tab_labels", state.get_boolean())
-        self._apply_tab_label_visibility()
-
-    def _build_update_banner(self):
-        outer = Gtk.Box()
-        outer.set_halign(Gtk.Align.CENTER)
-        outer.set_margin_top(6)
-        outer.set_margin_bottom(4)
-        outer.set_opacity(0.92)
-
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        box.add_css_class("ab-float-banner")
-
-        icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
-        icon.set_pixel_size(16)
-        box.append(icon)
-
-        self._update_banner_label = Gtk.Label()
-        self._update_banner_label.set_xalign(0.0)
-        box.append(self._update_banner_label)
-
-        go_btn = Gtk.Button(label="Обновить")
-        go_btn.add_css_class("suggested-action")
-        go_btn.add_css_class("pill")
-        go_btn.set_valign(Gtk.Align.CENTER)
-        go_btn.connect("clicked", self._go_to_update)
-        box.append(go_btn)
-
-        close_btn = Gtk.Button()
-        close_btn.set_icon_name("window-close-symbolic")
-        close_btn.add_css_class("flat")
-        close_btn.add_css_class("circular")
-        close_btn.set_valign(Gtk.Align.CENTER)
-        close_btn.connect("clicked", lambda _: self._update_banner_revealer.set_reveal_child(False))
-        box.append(close_btn)
-
-        outer.append(box)
-
-        self._update_banner_revealer = Gtk.Revealer()
-        self._update_banner_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
-        self._update_banner_revealer.set_transition_duration(300)
-        self._update_banner_revealer.set_child(outer)
-        self._update_banner_revealer.set_reveal_child(False)
-        return self._update_banner_revealer
-
-
-    def _on_update_found_global(self, version):
-        self._update_banner_label.set_text(f"Доступна новая версия {version}")
-        self._update_banner_revealer.set_reveal_child(True)
-        self._update_badge_dot.set_visible(True)
-
-    def _go_to_update(self, *_):
-        self._update_banner_revealer.set_reveal_child(False)
-        self._stack.set_visible_child_name("setup")
 
 
     def _build_log_panel(self):
@@ -627,7 +434,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         self._progress_nesting = 0
         self._on_cancel_cb = None
         self._log_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self._log_container.set_vexpand(False)
+        self._log_container.set_vexpand(True)
         self._log_container.add_css_class("ab-log-terminal-panel")
 
         self._log_expander = Gtk.Expander(label="Лог терминала")
@@ -894,14 +701,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         return False
 
 
-    def _check_for_updates(self, *_):
-        if self._stack.get_visible_child_name() == "setup":
-            if self._setup.dismiss_update_section():
-                return
-        self._stack.set_visible_child_name("setup")
-        self._update_badge_dot.set_visible(False)
-        self._setup.check_for_updates(manual=True, on_update_found=self._on_update_found_global)
-
     def _present_global_search(self, *_):
         from ui.global_search import GlobalSearchPanel, build_all_search_items
 
@@ -1019,7 +818,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         d.set_developer_name("plafonlinux")
         d.set_version(config.VERSION)
         d.set_issue_url("https://github.com/plafonlinux/altbooster/issues")
-        d.set_support_url("https://plafon.gitbook.io/alt-zero")
         d.set_comments("Fedora Booster — утилита-компаньон для настройки Fedora Workstation (GNOME)")
         d.set_license_type(Gtk.License.MIT_X11)
         d.set_developers(
@@ -1032,13 +830,13 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
             ]
         )
         d.set_copyright("© 2026 PLAFON")
-        d.add_link("📖 ALT Zero", "https://plafon.gitbook.io/alt-zero")
         d.add_link("💻 GitHub", "https://github.com/plafonlinux/altbooster")
         d.add_link("👤 plafonlinux", "https://github.com/plafonlinux")
         d.add_link("👥 AlexanderShad", "https://github.com/AlexanderShad")
         d.add_link("👥 Toxblh", "https://github.com/Toxblh")
         d.add_link("👥 culler127", "https://github.com/culler127")
         d.add_link("👥 VadimTotok", "https://github.com/VadimTotok")
+        d.add_link("👤 mikanight", "https://github.com/mikanight")
         d.add_link("✈ Telegram", "https://t.me/plafonyoutube")
         d.add_link("✈ Чат", "https://t.me/plafonchat")
         d.present(self)
@@ -1277,6 +1075,8 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         GLib.idle_add(self._log_internal, text)
 
     def _log_internal(self, text):
+        if not self._log_expander.get_expanded():
+            self._log_expander.set_expanded(True)
         stripped = text.strip()
         if stripped:
             self._last_log_line = stripped

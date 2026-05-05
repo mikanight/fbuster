@@ -53,7 +53,7 @@
     {
       "id": "zsh",
       "title": "ZSH",
-      "description": "Устанавливает zsh + git + zplug, делает ZSH shell по умолчанию",
+      "description": "Устанавливает zsh + git, делает ZSH shell по умолчанию",
       "rows": [
         {
           "id": "zsh_install",
@@ -65,17 +65,6 @@
           "button_done_label": "Установлен",
           "check": { "type": "which", "value": "zsh" },
           "action": { "type": "privileged", "cmd": ["dnf", "install", "-y", "git", "zsh"] }
-        },
-        {
-          "id": "zplug_install",
-          "type": "command_row",
-          "title": "Установить zplug",
-          "subtitle": "git clone https://github.com/zplug/zplug ~/.zplug",
-          "icon": "utilities-terminal-symbolic",
-          "button_label": "Установить",
-          "button_done_label": "Установлен",
-          "check": { "type": "path", "value": "~/.zplug" },
-          "action": { "type": "builtin", "fn": "install_zplug" }
         },
         {
           "id": "zsh_default",

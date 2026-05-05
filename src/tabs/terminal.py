@@ -202,7 +202,6 @@ class TerminalPage(Gtk.Box):
             "shortcut_1": self._row_shortcut_1,
             "shortcut_2": self._row_shortcut_2,
             "zsh_install": self._row_zsh_install,
-            "zplug_install": self._row_zplug_install,
             "zsh_default": self._row_zsh_default,
             "fastfetch_install": self._row_fastfetch_install,
             "firacode_install": self._row_font_install,
@@ -359,7 +358,7 @@ class TerminalPage(Gtk.Box):
     def _build_zsh_group(self, body):
         group = Adw.PreferencesGroup()
         group.set_title("ZSH")
-        group.set_description("Устанавливает zsh + git + zplug, делает ZSH shell по умолчанию")
+        group.set_description("Устанавливает zsh + git, делает ZSH shell по умолчанию")
         body.append(group)
 
         self._row_zsh_install = SettingRow(
@@ -371,16 +370,6 @@ class TerminalPage(Gtk.Box):
             self._on_remove_zsh, "Удалить", "user-trash-symbolic"
         )
         group.add(self._row_zsh_install)
-
-        self._row_zplug_install = SettingRow(
-            "utilities-terminal-symbolic", "Установить zplug",
-            "git clone https://github.com/zplug/zplug ~/.zplug", "Установить",
-            self._on_install_zplug,
-            lambda: backend.check_app_installed({"check": ["path", "~/.zplug"]}),
-            "term_zplug_install", "Установлен",
-            self._on_remove_zplug, "Удалить", "user-trash-symbolic"
-        )
-        group.add(self._row_zplug_install)
 
         self._row_zsh_default = SettingRow(
             "system-run-symbolic", "ZSH по умолчанию",
@@ -407,31 +396,6 @@ class TerminalPage(Gtk.Box):
         if hasattr(win, "start_progress"): win.start_progress("Удаление ZSH...")
         backend.run_privileged(["dnf", "remove", "-y", "zsh"], self._log,
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
-
-    def _on_install_zplug(self, row):
-        row.set_working()
-        self._log("\n▶  Установка zplug...\n")
-        win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Установка zplug...")
-        def _do():
-            r = subprocess.run(["git", "clone", "https://github.com/zplug/zplug", os.path.expanduser("~/.zplug")], capture_output=True, text=True)
-            ok = r.returncode == 0
-            GLib.idle_add(row.set_done, ok)
-            GLib.idle_add(self._log, "✔  zplug установлен!\n" if ok else f"✘  Ошибка: {r.stderr}\n")
-            if hasattr(win, "stop_progress"): win.stop_progress(ok)
-        threading.Thread(target=_do, daemon=True).start()
-
-    def _on_remove_zplug(self, row):
-        row.set_working()
-        self._log("\n▶  Удаление zplug...\n")
-        win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Удаление zplug...")
-        def _do():
-            shutil.rmtree(os.path.expanduser("~/.zplug"), ignore_errors=True)
-            GLib.idle_add(row.set_undo_done, True)
-            GLib.idle_add(self._log, "✔  zplug удалён\n")
-            if hasattr(win, "stop_progress"): win.stop_progress(True)
-        threading.Thread(target=_do, daemon=True).start()
 
     def _check_zsh_default(self):
         return os.environ.get("SHELL") == "/bin/zsh"
@@ -829,9 +793,6 @@ class TerminalPage(Gtk.Box):
 
         run_step(self._row_zsh_install, "Установка ZSH",
             lambda: backend.run_privileged_sync(["dnf", "install", "-y", "git", "zsh"], self._log))
-
-        run_step(self._row_zplug_install, "Установка zplug",
-            lambda: subprocess.run(["git", "clone", "https://github.com/zplug/zplug", os.path.expanduser("~/.zplug")], capture_output=True).returncode == 0)
 
         run_step(self._row_zsh_default, "ZSH по умолчанию",
             lambda: backend.run_privileged_sync(["chsh", "-s", "/bin/zsh", os.environ.get("USER")], self._log))

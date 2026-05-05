@@ -18,7 +18,7 @@
     <list>
       <item><p><em>Ghostty</em> как основной терминал (GPU-ускоренный, из COPR).</p></item>
       <item><p>Горячие клавиши запуска терминала (<key>Ctrl</key>+<key>Alt</key>+<key>T</key>, <key>Super</key>+<key>Enter</key>).</p></item>
-      <item><p><em>ZSH + zplug</em> с плагинами и установкой оболочки по умолчанию.</p></item>
+      <item><p><em>ZSH</em> с плагинами и установкой оболочки по умолчанию.</p></item>
       <item><p><em>Fastfetch</em> и шрифт Nerd Font для информативного старта терминала.</p></item>
       <item><p>Набор алиасов для ускорения частых команд.</p></item>
     </list>

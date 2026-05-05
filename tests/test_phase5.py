@@ -42,7 +42,7 @@ class TestWindowBrand:
 
     def test_fedora_guide_url(self):
         s = read_file("ui/window.py")
-        assert "_FEDORA_BOOSTER_GUIDE_URL" in s
+        assert "_FEDORA_BOOSTER_GUIDE_URL" not in s
         assert "_ALT_ZERO_GUIDE_URL" not in s
 
     def test_init_references_fedora_booster_window(self):

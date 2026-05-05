@@ -32,18 +32,6 @@ _tweak_page_css.load_from_data(b"""
         color: @error_color;
         background-color: alpha(@error_color, 0.18);
     }
-    button.ab-alt-zero-guide-badge {
-        font-size: 0.75em;
-        font-weight: 600;
-        min-height: 0;
-        padding: 4px 12px;
-        border-radius: 999px;
-        color: @accent_color;
-        background-color: alpha(@accent_color, 0.15);
-    }
-    button.ab-alt-zero-guide-badge:hover {
-        background-color: alpha(@accent_color, 0.25);
-    }
 """)
 
 class TweaksPage(Gtk.Box):
