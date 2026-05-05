@@ -4,46 +4,6 @@
   "icon": "video-display-symbolic",
   "groups": [
     {
-      "id": "overclock",
-      "title": "Разгон AMD Radeon",
-      "description": "Добавляет параметры amdgpu в GRUB и пересобирает загрузчик. Требуется перезагрузка.",
-      "rows": [
-        {
-          "id": "overclock_enable",
-          "type": "command_row",
-          "title": "Режим разгона",
-          "subtitle": "Разблокирует управление частотами и питанием GPU",
-          "icon": "computer-symbolic",
-          "button_label": "Включить",
-          "button_done_label": "Включено",
-          "check": { "type": "builtin", "fn": "check_overclock" },
-          "action": { "type": "builtin", "fn": "enable_overclock" }
-        },
-        {
-          "id": "grub_rebuild",
-          "type": "command_row",
-          "title": "Обновление загрузчика",
-          "subtitle": "Применяет параметры ядра (grub2-mkconfig)",
-          "icon": "system-reboot-symbolic",
-          "button_label": "Применить",
-          "button_style": "suggested-action",
-          "check": null,
-          "action": { "type": "privileged", "cmd": ["grub2-mkconfig", "-o", "/boot/grub2/grub.cfg"] }
-        },
-        {
-          "id": "reboot",
-          "type": "command_row",
-          "title": "Перезагрузка системы",
-          "subtitle": "Необходима для вступления изменений в силу",
-          "icon": "system-shutdown-symbolic",
-          "button_label": "Выполнить",
-          "button_style": "destructive-action",
-          "check": null,
-          "action": { "type": "builtin", "fn": "confirm_reboot" }
-        }
-      ]
-    },
-    {
       "id": "lact",
       "title": "LACT — управление видеокартой",
       "description": "Linux AMDGPU Controller: мониторинг, разгон и управление вентилятором",

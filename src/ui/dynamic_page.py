@@ -17,10 +17,7 @@ from gi.repository import Adw, Gio, GLib, Gtk
 from core import backend, config
 from tabs.amd_actions import (
     apply_lact_config,
-    check_overclock,
     check_wheel,
-    confirm_reboot,
-    enable_overclock,
     setup_lact_wheel,
 )
 from tabs.terminal_actions import (
@@ -53,12 +50,9 @@ BUILTIN_REGISTRY: dict[str, Callable] = {
     "install_fastfetch_config": install_fastfetch_config,
     "check_zsh_aliases":        check_zsh_aliases,
     "add_zsh_aliases":          add_zsh_aliases,
-    "check_overclock":          check_overclock,
-    "enable_overclock":         enable_overclock,
     "check_wheel":              check_wheel,
     "setup_lact_wheel":         setup_lact_wheel,
     "apply_lact_config":        apply_lact_config,
-    "confirm_reboot":           confirm_reboot,
 }
 from ui.widgets import (
     clear_status,

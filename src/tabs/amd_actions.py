@@ -4,36 +4,9 @@ from __future__ import annotations
 import os
 import shlex
 import subprocess
-from pathlib import Path
 from typing import Any
 
-from gi.repository import GLib
-
 from core import backend, config
-
-_OVERCLOCK_PARAMS = "amdgpu.ppfeaturemask=0xffffffff radeon.cik_support=0 amdgpu.cik_support=1"
-_GRUB_CONF = "/etc/sysconfig/grub2"
-
-
-def check_overclock(_page: Any, _arg: Any) -> bool:
-    try:
-        return "amdgpu.ppfeaturemask=0xffffffff" in Path(_GRUB_CONF).read_text()
-    except OSError:
-        return False
-
-
-def enable_overclock(page, _arg: Any) -> bool:
-    cmd = [
-        "bash", "-c",
-        f"set -e; CONF={_GRUB_CONF}; PARAMS=\"{_OVERCLOCK_PARAMS}\"; "
-        "grep -q 'amdgpu.ppfeaturemask=0xffffffff' \"$CONF\" && exit 0; "
-        "sed -i \"s|^\\(GRUB_CMDLINE_LINUX_DEFAULT='[^']*\\)'|\\1 $PARAMS'|\" \"$CONF\"",
-    ]
-    log_fn = page.log if page else lambda _: None
-    ok = backend.run_privileged_sync(cmd, log_fn)
-    if page:
-        page.log("\n✔  Параметры разгона добавлены\n" if ok else "\n✘  Ошибка записи в GRUB\n")
-    return ok
 
 
 def check_wheel(_page: Any, _arg: Any) -> bool:
@@ -79,8 +52,4 @@ def apply_lact_config(page, src_path: str) -> bool:
     return ok
 
 
-def confirm_reboot(page, _arg: Any) -> bool:
-    if page:
-        GLib.idle_add(page._show_reboot_dialog)
-    return True
 

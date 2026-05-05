@@ -23,13 +23,10 @@ class TestUpdateGrubReplaced:
     def test_amd_json_no_update_grub(self):
         s = read_file("modules/amd.json")
         assert "update-grub" not in s
-        assert "grub2-mkconfig" in s
-        assert "/boot/grub2/grub.cfg" in s
 
     def test_amd_py_no_update_grub(self):
         s = read_file("tabs/amd.py")
         assert "update-grub" not in s
-        assert "grub2-mkconfig" in s
 
     def test_terminal_py_grub2_mkconfig(self):
         s = read_file("tabs/terminal.py")
