@@ -16,6 +16,13 @@ VERSION = "6.0.0-dev"
 DEBUG: bool = False
 INITIAL_TAB: str = ""
 
+def log_exception(msg: str = "") -> None:
+    """Логирование исключения в stderr если DEBUG, иначе молча."""
+    if DEBUG:
+        traceback.print_exc()
+        if msg:
+            print(msg, file=__import__("sys").stderr)
+
 _STATE_SAVE_DEBOUNCE_S = 0.45
 _state_save_timer: threading.Timer | None = None
 _state_save_timer_lock = threading.Lock()

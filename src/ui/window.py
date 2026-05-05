@@ -255,8 +255,109 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         self._app_menu = menu
 
         _dot_css = Gtk.CssProvider()
-        _style_path = Path(__file__).resolve().parent / "style.css"
-        _dot_css.load_from_path(str(_style_path))
+        _dot_css.load_from_data(b"""
+            .ab-update-dot {
+                background-color: @accent_color;
+                border-radius: 999px;
+                min-width: 9px;
+                min-height: 9px;
+                border: 1.5px solid @window_bg_color;
+                padding: 0;
+                font-size: 0;
+            }
+            statuspage.compact scrolledwindow scrollbar {
+                opacity: 0;
+                min-width: 0;
+                min-height: 0;
+            }
+            .ab-float-banner {
+                background-color: alpha(@card_bg_color, 0.9);
+                border-radius: 20px;
+                padding: 5px 14px 5px 16px;
+                border: 1px solid alpha(@borders, 0.4);
+            }
+            .ab-float-banner label {
+                font-size: 0.82em;
+            }
+            .ab-main-content {
+                box-shadow: inset 6px 0 10px -6px alpha(black, 0.3);
+            }
+            headerbar {
+                box-shadow: 0 1px 6px alpha(black, 0.18);
+            }
+            /* Same column width as op card stretched the search button - fixed square */
+            button.ab-global-search-btn {
+                min-width: 42px;
+                min-height: 42px;
+                padding: 0;
+            }
+            button.ab-global-search-btn image {
+                -gtk-icon-size: 22px;
+            }
+            .ab-log-terminal-panel {
+                padding: 0;
+            }
+            expander.ab-log-expander-compact {
+                margin: 0;
+                padding: 0;
+            }
+            expander.ab-log-expander-compact > box > label {
+                padding-top: 2px;
+                padding-bottom: 2px;
+            }
+            .ab-icon-green { color: @success_color; }
+            .ab-icon-red   { color: @error_color;   }
+            .ab-op-floating-card {
+                background-image: none;
+                background-color: @theme_bg_color;
+                border: 1px solid @borders;
+                border-radius: 12px;
+                box-shadow: 0 4px 16px alpha(black, 0.28);
+                opacity: 1;
+                padding: 12px 20px 14px 20px;
+            }
+            .ab-log-overlay-backdrop {
+                background-color: alpha(black, 0.62);
+            }
+            .ab-log-overlay-card {
+                background-color: @card_bg_color;
+                border-radius: 16px;
+                border: 1px solid alpha(@borders, 0.85);
+                box-shadow: 0 8px 28px alpha(black, 0.22);
+            }
+            .ab-log-overlay-header {
+                padding: 10px 10px 8px 16px;
+                border-bottom: 1px solid alpha(@borders, 0.4);
+            }
+            .ab-log-overlay-card scrolledwindow {
+                border-radius: 0 0 15px 15px;
+            }
+            .ab-log-overlay-card textview {
+                background-color: @view_bg_color;
+                border-radius: 0 0 15px 15px;
+            }
+            .ab-log-overlay-card textview > text {
+                background-color: @view_bg_color;
+                border-radius: 0 0 15px 15px;
+            }
+            /* TimeSync tabs: align icon + label in header */
+            viewswitcher.ab-borg-viewswitcher {
+                margin-top: 2px;
+                margin-bottom: 2px;
+            }
+            viewswitcher.ab-borg-viewswitcher button.toggle > stack > box.wide {
+                padding-top: 5px;
+                padding-bottom: 5px;
+                border-spacing: 8px;
+            }
+            viewswitcher.ab-borg-viewswitcher button.toggle > stack > box.wide > label {
+                padding-top: 1px;
+                padding-bottom: 1px;
+            }
+            viewswitcher.ab-borg-viewswitcher button.toggle > stack > box.wide > image {
+                -gtk-icon-size: 18px;
+            }
+        """)
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(), _dot_css,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
@@ -699,7 +800,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
             if ok:
                 GLib.idle_add(self._auth_ok)
             else:
-                GLib.idle_add(self.get_application().quit)
+                GLib.idle_add(self._show_pkexec_error)
 
         threading.Thread(target=_check, daemon=True).start()
 
@@ -713,6 +814,24 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
             subprocess.Popen([sys.executable] + sys.argv)
             self.get_application().quit()
         return False
+
+    def _show_pkexec_error(self):
+        self._op_card.set_visible(False)
+        dialog = Adw.AlertDialog(
+            heading="Ошибка авторизации",
+            body=(
+                "Не удалось запустить pkexec.\n\n"
+                "Возможная причина: в вашем сеансе не запущен агент аутентификации Polkit "
+                "(polkit-gnome, xfce-polkit и др.).\n\n"
+                "Добавьте запуск агента в автостарт вашего окружения рабочего стола, "
+                "например:\n"
+                "<tt>polkit-gnome-authentication-agent-1</tt>"
+            ),
+        )
+        dialog.add_response("quit", "Закрыть")
+        dialog.set_default_response("quit")
+        dialog.connect("response", lambda d, _r: self.get_application().quit())
+        dialog.present(self)
 
     def _auth_ok(self):
         self.present()
@@ -1010,6 +1129,13 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
     def add_toast(self, toast):
         self._toast_overlay.add_toast(toast)
 
+    def show_toast(self, message: str, timeout: int = 4) -> None:
+        def _do():
+            toast = Adw.Toast(title=message)
+            toast.set_timeout(timeout)
+            self._toast_overlay.add_toast(toast)
+        GLib.idle_add(_do)
+
 
     def _build_op_card(self) -> Gtk.Widget:
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -1148,6 +1274,10 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
                 if self._reset_status_timer_id:
                     GLib.source_remove(self._reset_status_timer_id)
                 self._reset_status_timer_id = GLib.timeout_add(4000, self._reset_status_label)
+                if not success:
+                    toast = Adw.Toast(title="Операция завершилась с ошибкой. Смотрите лог ↙")
+                    toast.set_timeout(5)
+                    self._toast_overlay.add_toast(toast)
 
         GLib.idle_add(_do)
 

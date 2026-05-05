@@ -4,7 +4,6 @@ import os
 import re
 import shlex
 import shutil
-import signal
 import subprocess
 import threading
 import time
@@ -18,11 +17,239 @@ from core import config
 OnLine = Callable[[str], None]
 OnDone = Callable[[bool], None]
 
+_SAFE_CMDS: frozenset[str] = frozenset({
+    "env",
+    "dnf", "dnf5",
+    "flatpak",
+    "systemctl",
+    "btrfs",
+    "rsync",
+    "mount",
+    "umount",
+    "chsh",
+    "reboot",
+    "rm",
+    "chmod",
+    "chown",
+    "mkdir",
+    "cp",
+    "mv",
+    "install",
+    "sysctl",
+    "patch",
+    "borg",
+    "gtk-update-icon-cache",
+    "update-desktop-database",
+    "journalctl",
+    "fstrim",
+})
+
+_INTERNAL_CMDS: frozenset[str] = frozenset({
+    "bash",
+    "sh",
+    "npm",
+    "git",
+    "tar",
+    "find",
+})
+
+_CMD_WHITELIST: frozenset[str] = _SAFE_CMDS | _INTERNAL_CMDS
+
+_BLOCKED_RM_PATHS: frozenset[str] = frozenset({
+    "/", "/home", "/etc", "/boot", "/usr", "/var",
+    "/lib", "/lib64", "/bin", "/sbin", "/proc", "/sys",
+    "/run", "/dev", "/tmp",
+})
+
+
+def _check_args(cmd: Sequence[str]) -> str | None:
+    if not cmd:
+        return None
+    name, args = cmd[0], list(cmd[1:])
+
+    if name == "env":
+        if len(args) < 2 or args[0] != "LC_ALL=C":
+            return "env: разрешён только префикс LC_ALL=C для следующей команды"
+
+    if name == "rm":
+        if "--no-preserve-root" in args:
+            return "rm: --no-preserve-root запрещён"
+        for arg in args:
+            if not arg.startswith("-") and os.path.normpath(arg) in _BLOCKED_RM_PATHS:
+                return f"rm: цель {arg!r} защищена"
+
+    elif name == "find":
+        for flag in ("-exec", "-execdir", "-delete", "-ok", "-okdir"):
+            if flag in args:
+                return f"find: флаг {flag!r} запрещён"
+
+    elif name == "tar":
+        for arg in args:
+            for flag in ("--to-command", "--use-compress-program", "--checkpoint-action"):
+                if arg == flag or arg.startswith(f"{flag}="):
+                    return f"tar: {flag!r} запрещён"
+
+    elif name == "git":
+        if args and args[0] == "config":
+            return "git: субкоманда 'config' запрещена"
+        if any(a == "--template" or a.startswith("--template=") for a in args):
+            return "git: --template запрещён"
+
+    elif name == "npm":
+        blocked = {"run", "exec", "x", "start", "test", "publish", "pack"}
+        if args and args[0] in blocked:
+            return f"npm: субкоманда {args[0]!r} запрещена"
+
+    elif name == "install":
+        for i, arg in enumerate(args):
+            mode_str: str | None = None
+            if arg in ("-m", "--mode") and i + 1 < len(args):
+                mode_str = args[i + 1]
+            elif arg.startswith("-m") and len(arg) > 2:
+                mode_str = arg[2:]
+            if mode_str is not None:
+                try:
+                    if int(mode_str, 8) & 0o6000:
+                        return f"install: режим {mode_str!r} содержит SUID/SGID биты"
+                except ValueError:
+                    pass
+
+    return None
+
+_current_proc: subprocess.Popen | None = None
+_current_proc_lock = threading.Lock()
+
+
+def _stdbuf_line_prefix() -> str:
+    for p in ("/usr/bin/stdbuf", "/bin/stdbuf"):
+        if os.path.isfile(p):
+            return f"{p} -oL "
+    return ""
+
+
 _pkexec_shell_proc: subprocess.Popen | None = None
 _pkexec_shell_lock = threading.Lock()
+_pkexec_io_lock = threading.Lock()
 
-_running_command_pid: int | None = None
-_running_command_lock = threading.Lock()
+_polkit_agent_proc: subprocess.Popen | None = None
+
+_POLKIT_AGENTS = [
+    "/usr/libexec/polkit-1/polkit-gnome-authentication-agent-1",
+    "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1",
+    "/usr/libexec/polkit-gnome-authentication-agent-1",
+    "/usr/lib/x86_64-linux-gnu/polkit-gnome-authentication-agent-1",
+    "/usr/lib/aarch64-linux-gnu/polkit-gnome-authentication-agent-1",
+    "/usr/lib/xfce4/polkit-xfce-authentication-agent-1",
+    "/usr/libexec/xfce-polkit",
+    "lxpolkit",
+    "/usr/lib/lxqt-policykit/lxqt-policykit-agent",
+    "/usr/libexec/kf6/polkit-kde-authentication-agent-1",
+    "/usr/libexec/polkit-kde-authentication-agent-1",
+]
+
+
+def _is_polkit_agent_running() -> bool:
+    try:
+        result = subprocess.run(
+            ["busctl", "--user", "list", "--no-pager"],
+            capture_output=True, text=True, timeout=3,
+        )
+        return "org.freedesktop.PolicyKit1.AuthenticationAgent" in result.stdout
+    except Exception:
+        pass
+    try:
+        result = subprocess.run(
+            ["gdbus", "call", "--session",
+             "--dest", "org.freedesktop.DBus",
+             "--object-path", "/org/freedesktop/DBus",
+             "--method", "org.freedesktop.DBus.ListNames"],
+            capture_output=True, text=True, timeout=3,
+        )
+        return "org.freedesktop.PolicyKit1.AuthenticationAgent" in result.stdout
+    except Exception:
+        return False
+
+
+def try_start_polkit_agent() -> bool:
+    global _polkit_agent_proc
+
+    if _is_polkit_agent_running():
+        return True
+
+    for agent_path in _POLKIT_AGENTS:
+        exe = agent_path if os.path.isabs(agent_path) else None
+        if exe is None:
+            exe = shutil.which(agent_path)
+        if exe and os.path.isfile(exe):
+            try:
+                _polkit_agent_proc = subprocess.Popen(
+                    [exe],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                for _ in range(10):
+                    time.sleep(0.3)
+                    if _is_polkit_agent_running():
+                        return True
+            except Exception:
+                config.log_exception(f"try_start_polkit_agent: failed to start {exe!r}")
+    return False
+
+
+def _create_and_verify_shell() -> subprocess.Popen | None:
+    try:
+        proc = subprocess.Popen(
+            ["pkexec", "bash"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+    except Exception:
+        config.log_exception("_create_and_verify_shell: Popen")
+        return None
+
+    test_marker = f"---READY-{uuid.uuid4()}---"
+    try:
+        proc.stdin.write(f'echo "{test_marker}"\n')
+        proc.stdin.flush()
+    except OSError:
+        proc.terminate()
+        return None
+
+    found: list[bool | None] = [None]
+
+    def _reader() -> None:
+        try:
+            while True:
+                line = proc.stdout.readline()
+                if not line:
+                    found[0] = False
+                    return
+                if test_marker in line:
+                    found[0] = True
+                    return
+        except Exception:
+            config.log_exception("_create_and_verify_shell: reader")
+            found[0] = False
+
+    reader = threading.Thread(target=_reader, daemon=True)
+    reader.start()
+    reader.join(timeout=60)
+
+    if found[0] is True:
+        return proc
+
+    try:
+        proc.terminate()
+        proc.wait(timeout=3)
+    except Exception:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+    return None
 
 
 def _get_pkexec_shell() -> subprocess.Popen | None:
@@ -32,29 +259,25 @@ def _get_pkexec_shell() -> subprocess.Popen | None:
         _pkexec_shell_proc = None
 
     if _pkexec_shell_proc is None:
-        try:
-            _pkexec_shell_proc = subprocess.Popen(
-                ["pkexec", "bash"],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-            )
-        except Exception:
-            return None
+        _pkexec_shell_proc = _create_and_verify_shell()
 
     return _pkexec_shell_proc
 
 
 def cancel_current() -> None:
-    with _running_command_lock:
-        pid = _running_command_pid
-    if pid is not None:
+    global _pkexec_shell_proc
+    with _pkexec_shell_lock:
+        proc = _pkexec_shell_proc
+        _pkexec_shell_proc = None
+    if proc and proc.poll() is None:
         try:
-            os.kill(pid, signal.SIGTERM)
-        except OSError:
-            pass
+            proc.terminate()
+            proc.wait(timeout=3)
+        except Exception:
+            try:
+                proc.kill()
+            except Exception:
+                pass
 
 
 def start_pkexec_shell() -> tuple[bool, bool]:
@@ -64,67 +287,33 @@ def start_pkexec_shell() -> tuple[bool, bool]:
         if _pkexec_shell_proc and _pkexec_shell_proc.poll() is None:
             return True, False
 
-        try:
-            proc = subprocess.Popen(
-                ["pkexec", "bash"],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-            )
-        except Exception:
-            return False, False
-
-        test_marker = f"---READY-{uuid.uuid4()}---"
-        try:
-            proc.stdin.write(f'echo "{test_marker}"\n')
-            proc.stdin.flush()
-        except OSError:
-            proc.terminate()
-            return False, False
-
-        found: list[bool | None] = [None]
-
-        def _reader() -> None:
-            try:
-                while True:
-                    line = proc.stdout.readline()
-                    if not line:
-                        found[0] = False
-                        return
-                    if test_marker in line:
-                        found[0] = True
-                        return
-            except Exception:
-                found[0] = False
-
-        reader = threading.Thread(target=_reader, daemon=True)
-        reader.start()
-        reader.join(timeout=60)
-
-        if found[0] is True:
+        proc = _create_and_verify_shell()
+        if proc is not None:
             _pkexec_shell_proc = proc
             return True, False
 
-        is_cancel = False
-        if proc.poll() is not None:
-            is_cancel = (proc.returncode == 126)
-        try:
-            proc.terminate()
-            proc.wait(timeout=3)
-        except Exception:
-            proc.kill()
-        return False, is_cancel
+        agent_started = try_start_polkit_agent()
+        if agent_started:
+            proc = _create_and_verify_shell()
+            if proc is not None:
+                _pkexec_shell_proc = proc
+                return True, False
+
+        _pkexec_shell_proc = None
+        return False, False
 
 
 def _is_dnf_locked() -> bool:
     for lock_file in config.DNF_LOCK_FILES:
         if not os.path.exists(lock_file):
             continue
-        if subprocess.run(["fuser", lock_file], capture_output=True, timeout=5).returncode == 0:
-            return True
+        try:
+            if subprocess.run(["fuser", lock_file], capture_output=True, timeout=5).returncode == 0:
+                return True
+        except (OSError, subprocess.TimeoutExpired):
+            pass
     return False
+
 
 def _wait_for_dnf_lock(on_line: OnLine | None = None, timeout: int = 60) -> bool:
     for attempt in range(timeout // 5):
@@ -144,129 +333,145 @@ def _wait_for_dnf_lock(on_line: OnLine | None = None, timeout: int = 60) -> bool
         time.sleep(5)
     return False
 
-def _run_pkexec(cmd: Sequence[str], on_line: OnLine | None, on_done: OnDone) -> None:
+
+def _run_pkexec(cmd: Sequence[str], on_line: OnLine | None, on_done: OnDone, *, trusted: bool = True) -> None:
     def _emit(line: str) -> None:
         if on_line is not None:
             GLib.idle_add(on_line, line)
 
     def _worker() -> None:
-        global _running_command_pid
-        check_lock = False
-        if cmd:
-            if cmd[0] in ("apt", "apt-get", "flatpak", "dnf", "dnf5"):
-                check_lock = True
-            elif cmd[0] == "bash" and len(cmd) >= 3:
-                if "apt-get" in cmd[2] or "dnf" in cmd[2] or "flatpak" in cmd[2]:
-                    check_lock = True
-        if check_lock:
-            _wait_for_dnf_lock(on_line)
-
-        with _pkexec_shell_lock:
-            proc = _get_pkexec_shell()
-
-            if not proc or proc.poll() is not None:
-                _emit("⚠  Root-сессия не активна (pkexec).\n")
+        success = False
+        try:
+            if not cmd:
+                GLib.idle_add(on_done, False)
+                return
+            if cmd[0] not in _CMD_WHITELIST:
+                _emit(f"⛔  Команда отклонена (не в whitelist): {cmd[0]!r}\n")
+                config.log_exception(f"_run_pkexec: rejected command {cmd[0]!r}")
+                GLib.idle_add(on_done, False)
+                return
+            if not trusted and cmd[0] in _INTERNAL_CMDS:
+                _emit(
+                    f"Операция заблокирована из соображений безопасности: запуск '{cmd[0]}' "
+                    f"с правами администратора разрешён только встроенным функциям программы, "
+                    f"но не командам из пользовательской конфигурации.\n"
+                )
+                config.log_exception(f"_run_pkexec: untrusted call to internal command {cmd[0]!r}")
+                GLib.idle_add(on_done, False)
+                return
+            arg_error = _check_args(cmd)
+            if arg_error:
+                _emit(f"⛔  {arg_error}\n")
+                config.log_exception(f"_run_pkexec: blocked args: {arg_error}")
                 GLib.idle_add(on_done, False)
                 return
 
-            marker = f"__AB_EXIT__{uuid.uuid4().hex}__"
-            pid_marker = f"__AB_PID__{uuid.uuid4().hex}__"
-            exit_line_re = re.compile(rf"^{re.escape(marker)}\s+(-?\d+)\s*$")
-            pid_line_re = re.compile(rf"^{re.escape(pid_marker)}\s+(\d+)\s*$")
-            cmd_str = shlex.join(cmd)
+            check_lock = False
+            if cmd[0] in ("dnf", "dnf5", "flatpak"):
+                check_lock = True
+            elif (
+                cmd[0] == "env"
+                and len(cmd) >= 4
+                and cmd[1] == "LC_ALL=C"
+                and cmd[2] in ("dnf", "dnf5", "flatpak")
+            ):
+                check_lock = True
+            elif cmd[0] == "bash" and len(cmd) >= 3:
+                if "dnf" in cmd[2] or "flatpak" in cmd[2]:
+                    check_lock = True
+            if check_lock and not _wait_for_dnf_lock(on_line):
+                _emit("⚠  Пакетный менеджер занят, операция отменена.\n")
+                GLib.idle_add(on_done, False)
+                return
 
-            _has_stdbuf = shutil.which("stdbuf")
-            stdbuf_prefix = "stdbuf -oL " if _has_stdbuf else ""
+            with _pkexec_shell_lock:
+                proc = _get_pkexec_shell()
+                if not proc or proc.poll() is not None:
+                    _emit("⚠  Root-сессия не активна (pkexec).\n")
+                    GLib.idle_add(on_done, False)
+                    return
+
+            marker = f"__AB_EXIT__{uuid.uuid4().hex}__"
+            exit_line_re = re.compile(rf"^{re.escape(marker)}\s+(-?\d+)\s*$")
+            cmd_str = shlex.join(cmd)
+            stdbuf_p = _stdbuf_line_prefix()
             script = (
-                f"({stdbuf_prefix}{cmd_str}) 2>&1 &\n"
-                f"_AB_PID=$!\n"
-                f"printf '%s %s\\n' '{pid_marker}' \"$_AB_PID\"\n"
-                f"wait $_AB_PID\n"
+                f"({stdbuf_p}{cmd_str}) 2>&1; "
                 f"printf '%s %s\\n' '{marker}' \"$?\"\n"
             )
 
-            success = False
-            try:
-                if proc.stdin:
-                    proc.stdin.write(script)
-                    proc.stdin.flush()
+            with _pkexec_io_lock:
+                if proc.poll() is not None:
+                    _emit("⚠  Root-сессия была отменена.\n")
+                    GLib.idle_add(on_done, False)
+                    return
+                try:
+                    if proc.stdin:
+                        proc.stdin.write(script)
+                        proc.stdin.flush()
 
-                if proc.stdout:
-                    while True:
-                        line = proc.stdout.readline()
-                        if not line:
-                            break
+                    if proc.stdout:
+                        while True:
+                            line = proc.stdout.readline()
+                            if not line:
+                                break
 
-                        stripped = line.rstrip("\r\n")
+                            stripped = line.rstrip("\r\n")
+                            m = exit_line_re.match(stripped)
+                            if m:
+                                try:
+                                    success = int(m.group(1)) == 0
+                                except ValueError:
+                                    success = False
+                                break
 
-                        pm = pid_line_re.match(stripped)
-                        if pm:
-                            try:
-                                cmd_pid = int(pm.group(1))
-                                with _running_command_lock:
-                                    _running_command_pid = cmd_pid
-                            except ValueError:
-                                pass
-                            continue
-
-                        m = exit_line_re.match(stripped)
-                        if m:
-                            try:
-                                success = int(m.group(1)) == 0
-                            except ValueError:
-                                success = False
-                            break
-
-                        _emit(line)
-            except (BrokenPipeError, OSError):
-                _emit("⚠  Root-сессия была прервана.\n")
-            finally:
-                with _running_command_lock:
-                    _running_command_pid = None
+                            _emit(line)
+                except (BrokenPipeError, OSError):
+                    _emit("⚠  Root-сессия была прервана.\n")
 
             GLib.idle_add(on_done, success)
+        except Exception:
+            config.log_exception("_run_pkexec: unexpected exception in _worker")
+            _emit("⚠  Внутренняя ошибка при выполнении команды. Смотрите лог.\n")
+            GLib.idle_add(on_done, False)
 
     threading.Thread(target=_worker, daemon=True).start()
 
 
-def run_privileged(cmd: Sequence[str], on_line: OnLine | None, on_done: OnDone) -> None:
-    _run_pkexec(cmd, on_line, on_done)
+def run_privileged(cmd: Sequence[str], on_line: OnLine | None, on_done: OnDone, *, trusted: bool = True) -> None:
+    _run_pkexec(cmd, on_line, on_done, trusted=trusted)
+
+
+def _sync_wrapper(async_fn, cmd: Sequence[str], on_line: OnLine | None, timeout: int = 300) -> bool:
+    if threading.current_thread() is threading.main_thread():
+        raise RuntimeError(
+            "_sync_wrapper called from main thread — would deadlock "
+            "because on_done is dispatched via GLib.idle_add"
+        )
+    event = threading.Event()
+    result = False
+
+    def _done(ok: bool) -> None:
+        nonlocal result
+        result = ok
+        event.set()
+
+    async_fn(cmd, on_line, _done)
+    event.wait(timeout=timeout)
+    return result
+
 
 def run_privileged_sync(cmd: Sequence[str], on_line: OnLine | None) -> bool:
-    """Блокирует вызывающий поток до завершения команды в root-shell.
+    return _sync_wrapper(run_privileged, cmd, on_line)
 
-    Из обработчиков GTK это безопасно для простых сценариев, но длинные операции
-    заморозят интерфейс; для тяжёлых задач предпочтительны асинхронные API.
-    """
-    event = threading.Event()
-    result = False
-
-    def _done(ok: bool) -> None:
-        nonlocal result
-        result = ok
-        event.set()
-
-    run_privileged(cmd, on_line, _done)
-    event.wait()
-    return result
 
 def run_dnf_sync(cmd: Sequence[str], on_line: OnLine) -> bool:
-    """Синхронная обёртка над run_dnf."""
-    event = threading.Event()
-    result = False
+    return _sync_wrapper(run_dnf, cmd, on_line)
 
-    def _done(ok: bool) -> None:
-        nonlocal result
-        result = ok
-        event.set()
-
-    run_dnf(cmd, on_line, _done)
-    event.wait()
-    return result
 
 def run_dnf(cmd: Sequence[str], on_line: OnLine, on_done: OnDone) -> None:
-    """Установка/удаление пакетов через dnf с авто-снятием DNF-блокировки."""
     run_privileged(cmd, on_line, on_done)
+
 
 run_epm_sync = run_privileged_sync
 run_epm = run_privileged

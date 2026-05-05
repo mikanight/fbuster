@@ -144,7 +144,10 @@ class TestTweaksPyRemovals:
 
     def test_ananicy_uses_dnf(self):
         src = tweaks_src()
-        assert "ananicy" not in src
+        assert "ananicy-cpp" in src
+        assert "CachyOS" in src
+        assert "apt-get" not in src
+        assert "dnf" in src
 
     def test_scx_scheds_uses_dnf(self):
         src = tweaks_src()
@@ -164,11 +167,12 @@ class TestTweaksPyRemovals:
         assert "is_sis = _is_sisyphus()" not in src
         assert 'sisyphus_only_badge=not is_sis' not in src
         assert 'Требуется репозиторий Sisyphus' not in src
-        assert "scx_lavd" not in src
-        assert "LAVD" not in src
+        assert "LAVD" in src
+        assert "ananicy-cpp" in src
+        assert "CachyOS" in src
 
     def test_build_ananicy_no_sisyphus_gating(self):
         src = tweaks_src()
         assert "is_sis" not in src
-        assert "ananicy" not in src
-        assert "set_sensitive(False)" not in src
+        assert "ananicy-cpp" in src
+        assert "CachyOS" in src

@@ -69,12 +69,11 @@ class TestRunDnf:
     def test_run_dnf_sync_returns_bool(self):
         cmd = ["dnf", "install", "test-pkg"]
         on_line = MagicMock()
-        with patch.object(privileges, "run_dnf") as mock_dnf:
-            def fake_dnf(cmd, ol, od):
-                od(True)
-            mock_dnf.side_effect = fake_dnf
+        with patch.object(privileges, "_sync_wrapper") as mock_sync:
+            mock_sync.return_value = True
             result = privileges.run_dnf_sync(cmd, on_line)
             assert result is True
+            mock_sync.assert_called_once_with(privileges.run_dnf, cmd, on_line)
 
 
 class TestRunEpmAliases:

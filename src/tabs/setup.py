@@ -488,7 +488,9 @@ class SetupPage(Gtk.Box):
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Установка f3d...")
 
-        def _done(ok):
+        cmd = ["dnf", "install", "-y", "f3d"]
+
+        def _final_done(ok):
             row.set_done(ok)
             if ok:
                 self._log("✔  f3d установлен! Очищаю кэш миниатюр и перезапускаю Nautilus...\n")
@@ -502,7 +504,22 @@ class SetupPage(Gtk.Box):
                 self._log("✘  Не удалось установить f3d. Возможно, пакет отсутствует в репозитории.\n")
                 if hasattr(win, "stop_progress"): win.stop_progress(ok)
 
-        backend.run_privileged(["dnf", "install", "-y", "f3d"], self._log, _done)
+        def _retry_install_after_update(ok):
+            if not ok:
+                self._log("✘  Ошибка обновления индексов.\n")
+                _final_done(False)
+                return
+            self._log("\n▶  Повторная попытка установки f3d (после makecache)...\n")
+            backend.run_privileged(cmd, self._log, _final_done)
+
+        def _first_attempt_done(ok):
+            if ok:
+                _final_done(True)
+            else:
+                self._log("\n⚠  Ошибка установки. Пробую обновить индексы (dnf makecache)...\n")
+                backend.run_privileged(["dnf", "makecache", "-y"], self._log, _retry_install_after_update)
+
+        backend.run_privileged(cmd, self._log, _first_attempt_done)
 
     def _on_remove_f3d(self, row):
         row.set_working()

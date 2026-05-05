@@ -1,5 +1,6 @@
-
 import os
+import pwd
+import shutil
 import subprocess
 import threading
 from pathlib import Path
@@ -14,8 +15,6 @@ from gi.repository import Adw, Gdk, GLib, Gtk, Pango
 # Fixed layout for AppRow trailing area (CSS max-width alone does not cap Gtk measure).
 _APP_ACTIONS_COL_W = 560
 _APP_TRAILING_CLUSTER_W = _APP_ACTIONS_COL_W
-
-
 
 
 class _ActionsColumn(Gtk.Box):
@@ -40,9 +39,57 @@ class _AppTrailingCluster(Gtk.Box):
         return (min_b, nat_b, min_base, nat_base)
 
 
-_style_path = Path(__file__).resolve().parent / "style.css"
 _badge_css = Gtk.CssProvider()
-_badge_css.load_from_path(str(_style_path))
+_badge_css.load_from_data(b"""
+    .ab-source-badge {
+        font-size: 0.72em;
+        min-height: 0;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background-color: alpha(currentColor, 0.10);
+    }
+    .ab-source-badge.success {
+        color: @success_color;
+        background-color: alpha(@success_color, 0.15);
+    }
+    .ab-source-badge.warning {
+        color: @warning_color;
+        background-color: alpha(@warning_color, 0.15);
+    }
+    .ab-source-badge.accent {
+        color: @accent_color;
+        background-color: alpha(@accent_color, 0.18);
+    }
+    .ab-source-badge.error {
+        color: @error_color;
+        background-color: alpha(@error_color, 0.15);
+    }
+    .ab-source-badge.dim-label {
+        opacity: 0.55;
+    }
+    /* Match .ab-source-badge MenuButton height and padding. */
+    button.ab-app-row-install.suggested-action {
+        font-size: 0.72em;
+        font-weight: 600;
+        min-height: 26px;
+        padding: 2px 8px;
+        border-radius: 999px;
+    }
+    /* Trailing cluster wraps only the actions column now. */
+    box.ab-app-row-trailing-cluster {
+        min-width: 560px;
+    }
+    box.ab-app-row-actions-column {
+        min-width: 560px;
+    }
+    menubutton.ab-app-row-src-menu {
+        min-width: 0;
+    }
+    menubutton.ab-app-row-src-menu button {
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+""")
 
 _ab_source_badge_css_registered = False
 
@@ -71,6 +118,59 @@ from ui.widgets import (
     set_status_error,
     set_status_ok,
 )
+
+_LOCAL_BIN_PATH_MARKER = "# altbooster: ~/.local/bin в PATH"
+
+
+def _ensure_local_bin_in_shell_rc(log_fn) -> None:
+    """Дописывает ~/.local/bin в PATH для интерактивной оболочки пользователя (zsh / bash / fish)."""
+    try:
+        pw = pwd.getpwuid(os.getuid())
+        home = Path(pw.pw_dir).expanduser()
+        shell_path = pw.pw_shell or ""
+        shell_name = Path(shell_path).name.lower() if shell_path else ""
+    except (KeyError, TypeError, OSError):
+        return
+
+    def _rc_display(path: Path) -> str:
+        try:
+            return f"~/{path.relative_to(home).as_posix()}"
+        except ValueError:
+            return str(path)
+
+    if shell_name == "fish":
+        rc = home / ".config/fish/config.fish"
+        block = (
+            f"\n{_LOCAL_BIN_PATH_MARKER}\n"
+            "if not contains -- $HOME/.local/bin $PATH\n"
+            "    set -gx PATH $HOME/.local/bin $PATH\n"
+            "end\n"
+        )
+    elif shell_name == "zsh":
+        rc = home / ".zshrc"
+        block = f'\n{_LOCAL_BIN_PATH_MARKER}\nexport PATH="$HOME/.local/bin:$PATH"\n'
+    else:
+        bashrc = home / ".bashrc"
+        rc = bashrc if bashrc.exists() else home / ".profile"
+        block = f'\n{_LOCAL_BIN_PATH_MARKER}\nexport PATH="$HOME/.local/bin:$PATH"\n'
+
+    try:
+        rc.parent.mkdir(parents=True, exist_ok=True)
+        existing = rc.read_text(encoding="utf-8") if rc.exists() else ""
+        if _LOCAL_BIN_PATH_MARKER in existing:
+            log_fn(
+                f"ℹ  {_rc_display(rc)}: блок для ~/.local/bin уже есть (ALT Booster).\n"
+            )
+            return
+        with rc.open("a", encoding="utf-8") as f:
+            f.write(block)
+        disp = _rc_display(rc)
+        log_fn(
+            f"✔ В {disp} добавлен PATH для ~/.local/bin. "
+            f"Откройте новый терминал или выполните: source {rc}\n"
+        )
+    except OSError as e:
+        log_fn(f"⚠ Не удалось записать {rc}: {e}. Добавьте PATH вручную (описание на карточке).\n")
 
 
 class SettingRow(Adw.ActionRow):
@@ -142,12 +242,15 @@ class SettingRow(Adw.ActionRow):
         else:
             self.add_suffix(suffix_box)
 
-        if config.state_get(state_key) is True:
+        # Пустой state_key не используем для восстановления из state.json — иначе ключ ""
+        # совпадает с глобальным состоянием и блокирует кнопку без _refresh.
+        if state_key and config.state_get(state_key) is True:
             self._set_ui(True)
         elif check_fn is None:
             self._set_ui(False)
         else:
-            if "kbd" not in state_key:
+            # Пустой ключ: всегда подтягиваем UI через check_fn (см. комментарий к state_key выше).
+            if not state_key or "kbd" not in state_key:
                 threading.Thread(target=self._refresh, daemon=True).start()
 
     def _on_btn_clicked(self, _):
@@ -161,7 +264,8 @@ class SettingRow(Adw.ActionRow):
             enabled = self._check_fn()
         except Exception:
             enabled = False
-        config.state_set(self._state_key, enabled)
+        if self._state_key:
+            config.state_set(self._state_key, enabled)
         GLib.idle_add(self._set_ui, enabled)
 
     def _set_ui(self, enabled):
@@ -218,7 +322,7 @@ class SettingRow(Adw.ActionRow):
         self._btn.set_label("…")
 
     def set_done(self, ok):
-        if ok:
+        if ok and self._state_key:
             config.state_set(self._state_key, True)
         self._set_ui(ok)
         if not ok:
@@ -226,11 +330,12 @@ class SettingRow(Adw.ActionRow):
             self._btn.set_sensitive(True)
 
     def set_undo_done(self, ok):
-        if ok:
+        if ok and self._state_key:
             config.state_set(self._state_key, False)
             self._set_ui(False)
         else:
             self._set_ui(True)
+
 
 class AppRow(Adw.ActionRow):
     """Вкладка «Приложения»: кнопка «Установить» визуально как выбор источника (ab-source-badge)."""
@@ -249,11 +354,17 @@ class AppRow(Adw.ActionRow):
         self._log = log_fn
         self._on_change = on_change_cb
         self._installing = False
+        self._pulse_id = 0
         self._install_event = threading.Event()
         self._install_event.set()
         self._state_key = f"app_{app['id']}"
         self._installed_source_index = -1
-        self._selected_source_index = 0
+        flathub_idx = next(
+            (i for i, s in enumerate(self._sources) if "flathub" in s.get("label", "").lower()),
+            None,
+        )
+        self._selected_source_index = flathub_idx if flathub_idx is not None else 0
+        self.connect("unrealize", self._on_unrealize)
 
         self.set_title(app["label"])
         self.set_subtitle(app["desc"])
@@ -506,15 +617,88 @@ class AppRow(Adw.ActionRow):
 
         src = self._sources[idx]
 
+        cmd = list(src["cmd"])
+        is_epm = bool(cmd and cmd[0] == "epm")
+
+        if self._app.get("id") == "gemini_cli" and not shutil.which("npm"):
+            self._offer_nodejs_for_gemini_cli(src, cmd, is_epm)
+            return
+
         self._btn.set_sensitive(False)
         self._btn.set_label("…")
         if self._src_menu_btn:
             self._src_menu_btn.set_sensitive(False)
 
+        self._show_preview_then_install(src, cmd, is_epm)
+
+    def _offer_nodejs_for_gemini_cli(self, src, cmd, is_epm):
+        dialog = Adw.AlertDialog(
+            heading="Требуется Node.js",
+            body="Для Gemini CLI нужны Node.js и npm. Установить пакеты nodejs и npm сейчас?",
+        )
+        dialog.add_response("cancel", "Отмена")
+        dialog.add_response("install", "Установить")
+        dialog.set_response_appearance("install", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("install")
+
+        def on_response(_d, response):
+            if response != "install":
+                return
+            self._btn.set_sensitive(False)
+            self._btn.set_label("…")
+            if self._src_menu_btn:
+                self._src_menu_btn.set_sensitive(False)
+            self._log("\n▶ Установка Node.js и npm (для Gemini CLI)…\n")
+            win = self.get_root()
+            if hasattr(win, "start_progress"):
+                win.start_progress("Установка Node.js и npm…")
+
+            def after_nodejs(ok):
+                def _ui():
+                    if hasattr(win, "stop_progress"):
+                        win.stop_progress(ok)
+                    if not ok:
+                        self._log("✘ Не удалось установить Node.js и npm.\n")
+                        self._btn.set_sensitive(True)
+                        self._btn.set_label("Установить")
+                        if self._src_menu_btn:
+                            self._src_menu_btn.set_sensitive(True)
+                        return
+                    self._log("✔ Node.js и npm установлены. Далее откроется подтверждение установки Gemini CLI.\n")
+                    self._show_preview_then_install(src, cmd, is_epm)
+
+                GLib.idle_add(_ui)
+
+            backend.run_privileged(["dnf", "install", "-y", "nodejs", "npm"], self._log, after_nodejs)
+
+        dialog.connect("response", on_response)
+        dialog.present(self.get_root())
+
+    def _on_install_batch(self):
+        """Установка без диалога предпросмотра — для массовой установки."""
+        if self._installing or self.is_installed():
+            self._install_event.set()
+            return
+
+        idx = self._selected_source_index
+        if idx < 0 or idx >= len(self._sources):
+            idx = 0
+
+        if not self._sources:
+            self._log("\n✘  Нет источников установки для этого приложения.\n")
+            self._install_event.set()
+            return
+
+        src = self._sources[idx]
         cmd = list(src["cmd"])
         is_epm = bool(cmd and cmd[0] == "epm")
 
-        self._show_preview_then_install(src, cmd, is_epm)
+        self._btn.set_sensitive(False)
+        self._btn.set_label("…")
+        if self._src_menu_btn:
+            self._src_menu_btn.set_sensitive(False)
+
+        self._do_install(src, cmd, is_epm)
 
     def _show_preview_then_install(self, src, cmd, is_epm):
         def on_confirm():
@@ -549,7 +733,7 @@ class AppRow(Adw.ActionRow):
         self._btn.set_label("…")
         self._prog.set_visible(True)
         self._prog.set_fraction(0.0)
-        GLib.timeout_add(120, self._pulse)
+        self._pulse_id = GLib.timeout_add(120, self._pulse)
         self._log(f"\n▶  Установка {self._app['label']} ({src['label']})...\n")
 
         win = self.get_root()
@@ -592,6 +776,23 @@ class AppRow(Adw.ActionRow):
         if self._installing:
             return
 
+        name = self._app.get("label", "приложение")
+        dialog = Adw.AlertDialog(
+            heading=f"Удалить {name}?",
+            body="Это действие необратимо.",
+        )
+        dialog.add_response("cancel", "Отмена")
+        dialog.add_response("remove", "Удалить")
+        dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.connect("response", lambda _d, r: self._do_uninstall() if r == "remove" else None)
+        dialog.present(self.get_root())
+
+    def _do_uninstall(self):
+        if self._installing:
+            return
+
         idx = self._installed_source_index
         if idx < 0:
             idx = self._selected_source_index
@@ -600,7 +801,7 @@ class AppRow(Adw.ActionRow):
             idx = 0
 
         if not self._sources:
-             return
+            return
 
         src = self._sources[idx]
 
@@ -608,7 +809,7 @@ class AppRow(Adw.ActionRow):
         self._trash_btn.set_sensitive(False)
         self._prog.set_visible(True)
         self._prog.set_fraction(0.0)
-        GLib.timeout_add(120, self._pulse)
+        self._pulse_id = GLib.timeout_add(120, self._pulse)
 
         kind, pkg = src["check"]
         if kind == "flatpak":
@@ -618,7 +819,16 @@ class AppRow(Adw.ActionRow):
         elif kind == "rpm":
             if isinstance(pkg, str):
                 pkg = pkg.strip().split()[0]
-            cmd = ["epm", "-e", "-y", pkg]
+            cmd = ["dnf", "remove", "-y", pkg]
+        elif (
+            isinstance(src.get("cmd"), list)
+            and len(src["cmd"]) >= 3
+            and src["cmd"][0] == "epm"
+            and src["cmd"][1] == "play"
+            and isinstance(src["cmd"][2], str)
+            and not src["cmd"][2].startswith("-")
+        ):
+            cmd = ["epm", "play", "--remove", src["cmd"][2]]
         else:
             if "monitor-control" in str(src):
                 cmd = [
@@ -641,10 +851,16 @@ class AppRow(Adw.ActionRow):
         else:
             backend.run_privileged(cmd, self._log, self._uninstall_done)
 
+    def _on_unrealize(self, _):
+        if self._pulse_id:
+            GLib.source_remove(self._pulse_id)
+            self._pulse_id = 0
+
     def _pulse(self):
         if self._installing:
             self._prog.pulse()
             return True
+        self._pulse_id = 0
         return False
 
     def _install_done(self, ok):
@@ -655,6 +871,8 @@ class AppRow(Adw.ActionRow):
         if ok:
             invalidate_flatpak_cache()
             self._log(f"✔  {self._app['label']} установлен!\n")
+            if self._app.get("id") == "gemini_cli":
+                _ensure_local_bin_in_shell_rc(self._log)
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
             config.state_set(self._state_key, True)
             self._installed_source_index = self._selected_source_index
@@ -692,9 +910,11 @@ class TaskRow(Adw.ActionRow):
         self._on_log = on_log
         self._on_progress = on_progress
         self._running = False
+        self._pulse_id = 0
         self.result = None
         self._done_event = threading.Event()
         self._done_event.set()
+        self.connect("unrealize", self._on_unrealize)
 
         self.set_title(task["label"])
         self.set_subtitle(task["desc"])
@@ -784,7 +1004,7 @@ class TaskRow(Adw.ActionRow):
             self._on_log(f"\n▶  {self._task['label']}...\n")
             win = self.get_root()
             if hasattr(win, "start_progress"): win.start_progress(f"Выполнение: {self._task['label']}...")
-            GLib.timeout_add(110, self._pulse)
+            self._pulse_id = GLib.timeout_add(110, self._pulse)
             threading.Thread(target=self._run_user, args=(cmd,), daemon=True).start()
             return
 
@@ -797,7 +1017,7 @@ class TaskRow(Adw.ActionRow):
         self._on_log(f"\n▶  {self._task['label']}...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress(f"Выполнение: {self._task['label']}...")
-        GLib.timeout_add(110, self._pulse)
+        self._pulse_id = GLib.timeout_add(110, self._pulse)
         backend.run_privileged(cmd, self._on_log, self._finish)
 
     def _run_user(self, cmd):
@@ -812,10 +1032,16 @@ class TaskRow(Adw.ActionRow):
             GLib.idle_add(self._on_log, f"Error: {e}\n")
             GLib.idle_add(self._finish, False)
 
+    def _on_unrealize(self, _):
+        if self._pulse_id:
+            GLib.source_remove(self._pulse_id)
+            self._pulse_id = 0
+
     def _pulse(self):
         if self._running:
             self._prog.pulse()
             return True
+        self._pulse_id = 0
         return False
 
     def _finish(self, ok):
@@ -843,4 +1069,3 @@ class TaskRow(Adw.ActionRow):
         self._on_log(f"{'✔  Готово' if ok else '✘  Ошибка'}: {self._task['label']}\n")
         if hasattr(win, "stop_progress"): win.stop_progress(ok)
         self._on_progress()
-
