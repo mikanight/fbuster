@@ -83,25 +83,6 @@ def _add_custom_keybinding(index: int) -> None:
 _GHOSTTY_CONFIG = Path.home() / ".config" / "ghostty" / "config"
 
 
-def check_ghostty_default(_page: Any, _arg: Any) -> bool:
-    r = subprocess.run(
-        ["xdg-mime", "query", "default", "x-scheme-handler/terminal"],
-        capture_output=True, text=True, timeout=5,
-    )
-    return "com.mitchellh.ghostty.desktop" in r.stdout
-
-
-def set_ghostty_default(page, _arg: Any) -> bool:
-    r = subprocess.run(
-        ["xdg-mime", "default", "com.mitchellh.ghostty.desktop", "x-scheme-handler/terminal"],
-        capture_output=True, timeout=5,
-    )
-    ok = r.returncode == 0
-    if page:
-        page.log("\n✔  Ghostty default!\n" if ok else "\n✘  Ошибка\n")
-    return ok
-
-
 def check_ghostty_font(_page: Any, _arg: Any) -> bool:
     try:
         return "font-family = FiraCode Nerd Font" in _GHOSTTY_CONFIG.read_text()
