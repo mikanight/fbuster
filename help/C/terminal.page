@@ -3,7 +3,7 @@
       id="terminal">
   <info>
     <link type="guide" xref="index" group="terminal"/>
-    <desc>Подготовка терминального окружения: Ptyxis, ZSH, плагины, Fastfetch и алиасы.</desc>
+    <desc>Подготовка терминального окружения: Ghostty, ZSH, плагины, Fastfetch и алиасы.</desc>
   </info>
 
   <title>Терминал</title>
@@ -16,7 +16,7 @@
   <section id="features">
     <title>Что настраивается</title>
     <list>
-      <item><p><em>Ptyxis</em> как основной терминал GNOME.</p></item>
+      <item><p><em>Ghostty</em> как основной терминал (GPU-ускоренный, из COPR).</p></item>
       <item><p>Горячие клавиши запуска терминала (<key>Ctrl</key>+<key>Alt</key>+<key>T</key>, <key>Super</key>+<key>Enter</key>).</p></item>
       <item><p><em>ZSH + zplug</em> с плагинами и установкой оболочки по умолчанию.</p></item>
       <item><p><em>Fastfetch</em> и шрифт Nerd Font для информативного старта терминала.</p></item>
@@ -27,7 +27,7 @@
   <section id="howto">
     <title>Рекомендуемая последовательность</title>
     <list>
-      <item><p>Сначала установите/примените Ptyxis и горячие клавиши.</p></item>
+      <item><p>Сначала установите/примените Ghostty и горячие клавиши.</p></item>
       <item><p>Далее включите ZSH и плагины, перезапустите терминал.</p></item>
       <item><p>После этого добавьте Fastfetch и алиасы.</p></item>
       <item><p>Если хотите развернуть всё сразу — используйте кнопку <em>Применить всё</em>.</p></item>

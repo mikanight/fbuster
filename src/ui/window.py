@@ -1111,7 +1111,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         elif shutil.which("gedit"):
             cmd = ["gedit", path]
         elif shutil.which("nano"):
-            term = shutil.which("ptyxis") or shutil.which("gnome-terminal") or shutil.which("kgx")
+            term = shutil.which("ghostty") or shutil.which("ptyxis") or shutil.which("gnome-terminal") or shutil.which("kgx")
             if term:
                 cmd = [term, "--", "nano", path]
 

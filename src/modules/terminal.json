@@ -4,32 +4,32 @@
   "icon": "utilities-terminal-symbolic",
   "groups": [
     {
-      "id": "ptyxis",
-      "title": "Ptyxis",
-      "description": "Современный терминал GNOME, заменяет gnome-terminal",
+      "id": "ghostty",
+      "title": "Ghostty",
+      "description": "Современный GPU-ускоренный терминал из COPR (scottames/ghostty)",
       "rows": [
         {
-          "id": "ptyxis_install",
+          "id": "ghostty_install",
           "type": "command_row",
-          "title": "Установить Ptyxis",
-          "subtitle": "dnf install ptyxis + удалить gnome-terminal",
+          "title": "Установить Ghostty",
+          "subtitle": "dnf copr enable scottames/ghostty && dnf install ghostty",
           "icon": "utilities-terminal-symbolic",
           "button_label": "Установить",
           "button_done_label": "Установлен",
-          "check": { "type": "which", "value": "ptyxis" },
-          "action": { "type": "privileged", "cmd": ["bash", "-c", "dnf remove -y gnome-terminal 2>/dev/null || true && dnf install -y ptyxis"] }
+          "check": { "type": "which", "value": "ghostty" },
+          "action": { "type": "privileged", "cmd": ["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y ghostty"] }
         },
         {
-          "id": "ptyxis_default",
+          "id": "ghostty_default",
           "type": "command_row",
-          "title": "Ptyxis по умолчанию",
-          "subtitle": "xdg-mime default org.gnome.Ptyxis.desktop x-scheme-handler/terminal",
+          "title": "Ghostty по умолчанию",
+          "subtitle": "xdg-mime default com.mitchellh.ghostty.desktop x-scheme-handler/terminal",
           "icon": "starred-symbolic",
           "button_label": "Применить",
           "button_done_label": "Применено",
           "button_style": "flat",
-          "check": { "type": "builtin", "fn": "check_ptyxis_default" },
-          "action": { "type": "builtin", "fn": "set_ptyxis_default" }
+          "check": { "type": "builtin", "fn": "check_ghostty_default" },
+          "action": { "type": "builtin", "fn": "set_ghostty_default" }
         }
       ]
     },
@@ -132,14 +132,14 @@
         {
           "id": "font_apply",
           "type": "command_row",
-          "title": "Применить шрифт в Ptyxis",
+          "title": "Применить шрифт в Ghostty",
           "subtitle": "FiraCode Nerd Font Regular 14",
           "icon": "font-x-generic-symbolic",
           "button_label": "Применить",
           "button_done_label": "Применён",
           "button_style": "flat",
-          "check": { "type": "builtin", "fn": "check_ptyxis_font" },
-          "action": { "type": "shell", "cmd": ["dconf", "write", "/org/gnome/Ptyxis/Profiles/default/font-name", "'FiraCode Nerd Font Regular 14'"] }
+          "check": { "type": "builtin", "fn": "check_ghostty_font" },
+          "action": { "type": "builtin", "fn": "set_ghostty_font" }
         },
         {
           "id": "ffcfg_install",

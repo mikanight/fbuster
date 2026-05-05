@@ -80,31 +80,64 @@ def _add_custom_keybinding(index: int) -> None:
         subprocess.run(["dconf", "write", _KEYBINDINGS_BASE, new_arr], timeout=5)
 
 
-def check_ptyxis_default(_page: Any, _arg: Any) -> bool:
+_GHOSTTY_CONFIG = Path.home() / ".config" / "ghostty" / "config"
+
+
+def check_ghostty_default(_page: Any, _arg: Any) -> bool:
     r = subprocess.run(
         ["xdg-mime", "query", "default", "x-scheme-handler/terminal"],
         capture_output=True, text=True, timeout=5,
     )
-    return "org.gnome.Ptyxis.desktop" in r.stdout
+    return "com.mitchellh.ghostty.desktop" in r.stdout
 
 
-def set_ptyxis_default(page, _arg: Any) -> bool:
+def set_ghostty_default(page, _arg: Any) -> bool:
     r = subprocess.run(
-        ["xdg-mime", "default", "org.gnome.Ptyxis.desktop", "x-scheme-handler/terminal"],
+        ["xdg-mime", "default", "com.mitchellh.ghostty.desktop", "x-scheme-handler/terminal"],
         capture_output=True, timeout=5,
     )
     ok = r.returncode == 0
     if page:
-        page.log("\n✔  Ptyxis default!\n" if ok else "\n✘  Ошибка\n")
+        page.log("\n✔  Ghostty default!\n" if ok else "\n✘  Ошибка\n")
     return ok
 
 
-def check_ptyxis_font(_page: Any, _arg: Any) -> bool:
-    r = subprocess.run(
-        ["dconf", "read", "/org/gnome/Ptyxis/Profiles/default/font-name"],
-        capture_output=True, text=True, timeout=5,
-    )
-    return "FiraCode Nerd Font" in r.stdout
+def check_ghostty_font(_page: Any, _arg: Any) -> bool:
+    try:
+        return "font-family = FiraCode Nerd Font" in _GHOSTTY_CONFIG.read_text()
+    except OSError:
+        return False
+
+
+def set_ghostty_font(page, _arg: Any) -> bool:
+    try:
+        _GHOSTTY_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+        existing = _GHOSTTY_CONFIG.read_text() if _GHOSTTY_CONFIG.exists() else ""
+        lines = existing.splitlines()
+        new_lines = []
+        has_family = False
+        has_size = False
+        for line in lines:
+            if line.strip().startswith("font-family"):
+                new_lines.append("font-family = FiraCode Nerd Font")
+                has_family = True
+            elif line.strip().startswith("font-size"):
+                new_lines.append("font-size = 14")
+                has_size = True
+            else:
+                new_lines.append(line)
+        if not has_family:
+            new_lines.append("font-family = FiraCode Nerd Font")
+        if not has_size:
+            new_lines.append("font-size = 14")
+        _GHOSTTY_CONFIG.write_text("\n".join(new_lines).strip() + "\n")
+        if page:
+            page.log("\n✔  Шрифт применён в Ghostty\n")
+        return True
+    except OSError as e:
+        if page:
+            page.log(f"\n✘  Ошибка: {e}\n")
+        return False
 
 
 def check_shortcut_1(_page: Any, _arg: Any) -> bool:
@@ -112,14 +145,14 @@ def check_shortcut_1(_page: Any, _arg: Any) -> bool:
         ["dconf", "read", f"{_KEYBINDINGS_BASE}/custom0/command"],
         capture_output=True, text=True, timeout=5,
     )
-    return "'ptyxis'" in r.stdout
+    return "'ghostty'" in r.stdout
 
 
 def set_shortcut_1(page, _arg: Any) -> bool:
     base = f"{_KEYBINDINGS_BASE}/custom0"
     for args in [
         [f"{base}/name", "'Terminal 1'"],
-        [f"{base}/command", "'ptyxis'"],
+        [f"{base}/command", "'ghostty'"],
         [f"{base}/binding", "'<Primary><Alt>t'"],
     ]:
         subprocess.run(["dconf", "write"] + args, capture_output=True, timeout=5)
@@ -134,14 +167,14 @@ def check_shortcut_2(_page: Any, _arg: Any) -> bool:
         ["dconf", "read", f"{_KEYBINDINGS_BASE}/custom1/command"],
         capture_output=True, text=True, timeout=5,
     )
-    return "'ptyxis'" in r.stdout
+    return "'ghostty'" in r.stdout
 
 
 def set_shortcut_2(page, _arg: Any) -> bool:
     base = f"{_KEYBINDINGS_BASE}/custom1"
     for args in [
         [f"{base}/name", "'Terminal 2'"],
-        [f"{base}/command", "'ptyxis'"],
+        [f"{base}/command", "'ghostty'"],
         [f"{base}/binding", "'<Super>Return'"],
     ]:
         subprocess.run(["dconf", "write"] + args, capture_output=True, timeout=5)

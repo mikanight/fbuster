@@ -189,7 +189,7 @@ class TerminalPage(Gtk.Box):
         self._body = body
         self.append(scroll)
 
-        self._build_ptyxis_group(body)
+        self._build_ghostty_group(body)
         self._build_shortcuts_group(body)
         self._build_zsh_group(body)
         self._build_fastfetch_group(body)
@@ -198,8 +198,8 @@ class TerminalPage(Gtk.Box):
 
     def _register_terminal_search_rows(self):
         self._terminal_row_by_id = {
-            "ptyxis_install": self._row_ptyxis_install,
-            "ptyxis_default": self._row_ptyxis_default,
+            "ghostty_install": self._row_ghostty_install,
+            "ghostty_default": self._row_ghostty_default,
             "shortcut_1": self._row_shortcut_1,
             "shortcut_2": self._row_shortcut_2,
             "zsh_install": self._row_zsh_install,
@@ -222,10 +222,10 @@ class TerminalPage(Gtk.Box):
         GLib.idle_add(w.grab_focus)
         return True
 
-    def _build_ptyxis_group(self, body):
+    def _build_ghostty_group(self, body):
         group = Adw.PreferencesGroup()
-        group.set_title("Ptyxis")
-        group.set_description("Современный терминал GNOME, заменяет gnome-terminal")
+        group.set_title("Ghostty")
+        group.set_description("Современный GPU-ускоренный терминал из COPR (scottames/ghostty)")
 
         btn_all = Gtk.Button(label="Применить всё")
         btn_all.set_valign(Gtk.Align.CENTER)
@@ -235,69 +235,68 @@ class TerminalPage(Gtk.Box):
 
         body.append(group)
 
-        self._row_ptyxis_install = SettingRow(
-            "utilities-terminal-symbolic", "Установить Ptyxis",
-            "dnf install ptyxis + удалить gnome-terminal", "Установить",
-            self._on_install_ptyxis,
-            lambda: backend.check_app_installed({"check": ["which", "ptyxis"]}),
-            "term_ptyxis_install", "Установлен",
-            self._on_remove_ptyxis, "Удалить", "user-trash-symbolic"
+        self._row_ghostty_install = SettingRow(
+            "utilities-terminal-symbolic", "Установить Ghostty",
+            "dnf copr enable scottames/ghostty && dnf install ghostty", "Установить",
+            self._on_install_ghostty,
+            lambda: backend.check_app_installed({"check": ["which", "ghostty"]}),
+            "term_ghostty_install", "Установлен",
+            self._on_remove_ghostty, "Удалить", "user-trash-symbolic"
         )
-        group.add(self._row_ptyxis_install)
+        group.add(self._row_ghostty_install)
 
-        self._row_ptyxis_default = SettingRow(
-            "starred-symbolic", "Ptyxis по умолчанию",
-            "xdg-mime default org.gnome.Ptyxis.desktop", "Применить",
-            self._on_ptyxis_default,
-            self._check_ptyxis_default,
-            "term_ptyxis_default", "Применено",
-            self._on_ptyxis_default_undo, "Сбросить"
+        self._row_ghostty_default = SettingRow(
+            "starred-symbolic", "Ghostty по умолчанию",
+            "xdg-mime default com.mitchellh.ghostty.desktop", "Применить",
+            self._on_ghostty_default,
+            self._check_ghostty_default,
+            "term_ghostty_default", "Применено",
+            self._on_ghostty_default_undo, "Сбросить"
         )
-        group.add(self._row_ptyxis_default)
+        group.add(self._row_ghostty_default)
 
-    def _on_install_ptyxis(self, row):
+    def _on_install_ghostty(self, row):
         row.set_working()
-        self._log("\n▶  Установка Ptyxis...\n")
+        self._log("\n▶  Установка Ghostty...\n")
         win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Установка Ptyxis...")
+        if hasattr(win, "start_progress"): win.start_progress("Установка Ghostty...")
         def _done(ok):
             row.set_done(ok)
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
-        backend.run_privileged(["bash", "-c", "dnf remove -y gnome-terminal 2>/dev/null || true"], self._log,
-            lambda ok: backend.run_privileged(["dnf", "install", "-y", "ptyxis"], self._log, _done))
+        backend.run_privileged(["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y ghostty"], self._log, _done)
 
-    def _on_remove_ptyxis(self, row):
+    def _on_remove_ghostty(self, row):
         row.set_working()
-        self._log("\n▶  Удаление Ptyxis...\n")
+        self._log("\n▶  Удаление Ghostty...\n")
         win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Удаление Ptyxis...")
-        backend.run_privileged(["dnf", "remove", "-y", "ptyxis"], self._log,
+        if hasattr(win, "start_progress"): win.start_progress("Удаление Ghostty...")
+        backend.run_privileged(["dnf", "remove", "-y", "ghostty"], self._log,
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
-    def _check_ptyxis_default(self):
+    def _check_ghostty_default(self):
         try:
             r = subprocess.run(
                 ["xdg-mime", "query", "default", "x-scheme-handler/terminal"],
                 capture_output=True, text=True
             )
-            return "org.gnome.Ptyxis.desktop" in r.stdout
+            return "com.mitchellh.ghostty.desktop" in r.stdout
         except Exception:
             return False
 
-    def _on_ptyxis_default(self, row):
+    def _on_ghostty_default(self, row):
         row.set_working()
-        self._log("\n▶  Назначение Ptyxis терминалом по умолчанию...\n")
+        self._log("\n▶  Назначение Ghostty терминалом по умолчанию...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Настройка терминала по умолчанию...")
         def _do():
-            subprocess.run(["xdg-mime", "default", "org.gnome.Ptyxis.desktop", "x-scheme-handler/terminal"])
-            ok = self._check_ptyxis_default()
+            subprocess.run(["xdg-mime", "default", "com.mitchellh.ghostty.desktop", "x-scheme-handler/terminal"])
+            ok = self._check_ghostty_default()
             GLib.idle_add(row.set_done, ok)
             GLib.idle_add(self._log, "✔  Готово!\n" if ok else "✘  Ошибка\n")
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
         threading.Thread(target=_do, daemon=True).start()
 
-    def _on_ptyxis_default_undo(self, row):
+    def _on_ghostty_default_undo(self, row):
         row.set_working()
         self._log("\n▶  Сброс терминала по умолчанию (gnome-terminal)...\n")
         win = self.get_root()
@@ -319,7 +318,7 @@ class TerminalPage(Gtk.Box):
         self._row_shortcut_1 = SettingRow(
             "input-keyboard-symbolic", "Terminal 1",
             "Ctrl + Alt + T", "Назначить",
-            lambda r: self._set_shortcut(r, "custom0", "Terminal", "ptyxis --new-window", "<Control><Alt>t", "<Primary><Alt>t"),
+            lambda r: self._set_shortcut(r, "custom0", "Terminal", "ghostty", "<Control><Alt>t", "<Primary><Alt>t"),
             lambda: self._check_shortcut("custom0", "<Control><Alt>t"),
             "term_shortcut_1", "Назначен",
             lambda r: self._remove_shortcut(r, "custom0"), "Сбросить"
@@ -329,7 +328,7 @@ class TerminalPage(Gtk.Box):
         self._row_shortcut_2 = SettingRow(
             "input-keyboard-symbolic", "Terminal 2",
             "Super + Enter", "Назначить",
-            lambda r: self._set_shortcut(r, "custom1", "Terminal Super", "ptyxis --new-window", "<Super>Return"),
+            lambda r: self._set_shortcut(r, "custom1", "Terminal Super", "ghostty", "<Super>Return"),
             lambda: self._check_shortcut("custom1", "<Super>Return"),
             "term_shortcut_2", "Назначен",
             lambda r: self._remove_shortcut(r, "custom1"), "Сбросить"
@@ -529,10 +528,10 @@ class TerminalPage(Gtk.Box):
         group.add(self._row_font_install)
 
         self._row_font_apply = SettingRow(
-            "font-x-generic-symbolic", "Применить шрифт в Ptyxis",
+            "font-x-generic-symbolic", "Применить шрифт в Ghostty",
             "FiraCode Nerd Font Regular 14", "Применить",
             self._on_apply_font,
-            self._check_ptyxis_font,
+            self._check_ghostty_font,
             "term_font_apply", "Применён",
             self._on_apply_font_undo, "Сбросить"
         )
@@ -580,20 +579,40 @@ class TerminalPage(Gtk.Box):
         backend.run_privileged(["dnf", "remove", "-y", "fira-code-fonts"], self._log,
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
-    def _check_ptyxis_font(self):
+    def _check_ghostty_font(self):
         try:
-            r = subprocess.run(["dconf", "read", "/org/gnome/Ptyxis/Profiles/default/font-name"], capture_output=True, text=True)
-            return "FiraCode Nerd Font Regular 14" in r.stdout
+            p = Path(os.path.expanduser("~/.config/ghostty/config"))
+            return "font-family = FiraCode Nerd Font" in p.read_text()
         except Exception:
             return False
 
     def _on_apply_font(self, row):
         row.set_working()
-        self._log("\n▶  Применение шрифта в Ptyxis...\n")
+        self._log("\n▶  Применение шрифта в Ghostty...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Применение шрифта...")
         def _do():
-            subprocess.run(["dconf", "write", "/org/gnome/Ptyxis/Profiles/default/font-name", "'FiraCode Nerd Font Regular 14'"])
+            p = Path(os.path.expanduser("~/.config/ghostty/config"))
+            p.parent.mkdir(parents=True, exist_ok=True)
+            existing = p.read_text() if p.exists() else ""
+            lines = existing.splitlines()
+            new_lines = []
+            has_family = False
+            has_size = False
+            for line in lines:
+                if line.strip().startswith("font-family"):
+                    new_lines.append("font-family = FiraCode Nerd Font")
+                    has_family = True
+                elif line.strip().startswith("font-size"):
+                    new_lines.append("font-size = 14")
+                    has_size = True
+                else:
+                    new_lines.append(line)
+            if not has_family:
+                new_lines.append("font-family = FiraCode Nerd Font")
+            if not has_size:
+                new_lines.append("font-size = 14")
+            p.write_text("\n".join(new_lines).strip() + "\n")
             GLib.idle_add(row.set_done, True)
             GLib.idle_add(self._log, "✔  Шрифт применён\n")
             if hasattr(win, "stop_progress"): win.stop_progress(True)
@@ -601,11 +620,18 @@ class TerminalPage(Gtk.Box):
 
     def _on_apply_font_undo(self, row):
         row.set_working()
-        self._log("\n▶  Сброс шрифта в Ptyxis...\n")
+        self._log("\n▶  Сброс шрифта в Ghostty...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Сброс шрифта...")
         def _do():
-            subprocess.run(["dconf", "reset", "/org/gnome/Ptyxis/Profiles/default/font-name"])
+            p = Path(os.path.expanduser("~/.config/ghostty/config"))
+            if p.exists():
+                existing = p.read_text()
+                lines = existing.splitlines()
+                new_lines = [line for line in lines if not line.strip().startswith("font-family") and not line.strip().startswith("font-size")]
+                if len(new_lines) == 0 and existing.strip():
+                    new_lines = []
+                p.write_text("\n".join(new_lines).strip() + "\n" if new_lines else "")
             GLib.idle_add(row.set_undo_done, True)
             GLib.idle_add(self._log, "✔  Шрифт сброшен\n")
             if hasattr(win, "stop_progress"): win.stop_progress(True)
@@ -676,7 +702,7 @@ class TerminalPage(Gtk.Box):
         elif shutil.which("gedit"):
             editor_cmd = ["gedit", tmp_path]
         elif shutil.which("nano"):
-            term = shutil.which("ptyxis") or shutil.which("gnome-terminal") or shutil.which("kgx")
+            term = shutil.which("ghostty") or shutil.which("ptyxis") or shutil.which("gnome-terminal") or shutil.which("kgx")
             if term:
                 editor_cmd = [term, "--", "nano", tmp_path]
 
@@ -801,11 +827,11 @@ class TerminalPage(Gtk.Box):
             GLib.idle_add(self._log, f"{'✔' if ok else '✘'}  {action_name}\n")
             return ok
 
-        run_step(self._row_ptyxis_install, "Установка Ptyxis",
-            lambda: backend.run_privileged_sync(["bash", "-c", "dnf remove -y gnome-terminal 2>/dev/null || true && dnf install -y ptyxis"], self._log))
+        run_step(self._row_ghostty_install, "Установка Ghostty",
+            lambda: backend.run_privileged_sync(["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y ghostty"], self._log))
 
-        run_step(self._row_ptyxis_default, "Ptyxis по умолчанию",
-            lambda: subprocess.run(["xdg-mime", "default", "org.gnome.Ptyxis.desktop", "x-scheme-handler/terminal"]).returncode == 0)
+        run_step(self._row_ghostty_default, "Ghostty по умолчанию",
+            lambda: subprocess.run(["xdg-mime", "default", "com.mitchellh.ghostty.desktop", "x-scheme-handler/terminal"]).returncode == 0)
 
         def _sync_shortcut(uid, name, cmd, binding):
             path = f"/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/{uid}/"
@@ -820,11 +846,35 @@ class TerminalPage(Gtk.Box):
                 backend.run_gsettings(["set", "org.gnome.settings-daemon.plugins.media-keys", "custom-keybindings", array_str])
             return True
 
+        def _sync_ghostty_font():
+            p = Path(os.path.expanduser("~/.config/ghostty/config"))
+            p.parent.mkdir(parents=True, exist_ok=True)
+            existing = p.read_text() if p.exists() else ""
+            lines = existing.splitlines()
+            new_lines = []
+            has_family = False
+            has_size = False
+            for line in lines:
+                if line.strip().startswith("font-family"):
+                    new_lines.append("font-family = FiraCode Nerd Font")
+                    has_family = True
+                elif line.strip().startswith("font-size"):
+                    new_lines.append("font-size = 14")
+                    has_size = True
+                else:
+                    new_lines.append(line)
+            if not has_family:
+                new_lines.append("font-family = FiraCode Nerd Font")
+            if not has_size:
+                new_lines.append("font-size = 14")
+            p.write_text("\n".join(new_lines).strip() + "\n")
+            return True
+
         run_step(self._row_shortcut_1, "Шорткат Terminal 1",
-            lambda: _sync_shortcut("custom0", "Terminal", "ptyxis --new-window", "<Control><Alt>t"))
+            lambda: _sync_shortcut("custom0", "Terminal", "ghostty", "<Control><Alt>t"))
 
         run_step(self._row_shortcut_2, "Шорткат Terminal 2",
-            lambda: _sync_shortcut("custom1", "Terminal Super", "ptyxis --new-window", "<Super>Return"))
+            lambda: _sync_shortcut("custom1", "Terminal Super", "ghostty", "<Super>Return"))
 
         run_step(self._row_zsh_install, "Установка ZSH",
             lambda: backend.run_privileged_sync(["dnf", "install", "-y", "git", "zsh"], self._log))
@@ -842,7 +892,7 @@ class TerminalPage(Gtk.Box):
             lambda: backend.run_privileged_sync(["dnf", "install", "-y", "fira-code-fonts"], self._log))
 
         run_step(self._row_font_apply, "Применение шрифта",
-            lambda: subprocess.run(["dconf", "write", "/org/gnome/Ptyxis/Profiles/default/font-name", "'FiraCode Nerd Font Regular 14'"]).returncode == 0)
+            lambda: _sync_ghostty_font())
 
         def _sync_ff_config():
             p = Path(os.path.expanduser("~/.config/fastfetch/config.jsonc"))
