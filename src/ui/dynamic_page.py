@@ -22,6 +22,7 @@ from tabs.amd_actions import (
 )
 from tabs.terminal_actions import (
     add_zsh_aliases,
+    check_ghostty_default,
     check_ghostty_font,
     check_shortcut_1,
     check_shortcut_2,
@@ -29,6 +30,7 @@ from tabs.terminal_actions import (
     check_zsh_default,
     install_fastfetch_config,
     install_zplug,
+    set_ghostty_default,
     set_ghostty_font,
     set_shortcut_1,
     set_shortcut_2,
@@ -36,6 +38,8 @@ from tabs.terminal_actions import (
 )
 
 BUILTIN_REGISTRY: dict[str, Callable] = {
+    "check_ghostty_default":     check_ghostty_default,
+    "set_ghostty_default":       set_ghostty_default,
     "check_shortcut_1":         check_shortcut_1,
     "set_shortcut_1":           set_shortcut_1,
     "check_shortcut_2":         check_shortcut_2,

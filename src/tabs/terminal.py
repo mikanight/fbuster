@@ -199,6 +199,7 @@ class TerminalPage(Gtk.Box):
     def _register_terminal_search_rows(self):
         self._terminal_row_by_id = {
             "ghostty_install": self._row_ghostty_install,
+            "ghostty_default": self._row_ghostty_default,
             "shortcut_1": self._row_shortcut_1,
             "shortcut_2": self._row_shortcut_2,
             "zsh_install": self._row_zsh_install,
@@ -244,6 +245,16 @@ class TerminalPage(Gtk.Box):
         )
         group.add(self._row_ghostty_install)
 
+        self._row_ghostty_default = SettingRow(
+            "starred-symbolic", "Ghostty по умолчанию",
+            "~/.config/xdg-terminals.list", "Применить",
+            self._on_ghostty_default,
+            self._check_ghostty_default,
+            "term_ghostty_default", "Применено",
+            self._on_ghostty_default_undo, "Сбросить"
+        )
+        group.add(self._row_ghostty_default)
+
     def _on_install_ghostty(self, row):
         row.set_working()
         self._log("\n▶  Установка Ghostty...\n")
@@ -261,6 +272,43 @@ class TerminalPage(Gtk.Box):
         if hasattr(win, "start_progress"): win.start_progress("Удаление Ghostty...")
         backend.run_privileged(["dnf", "remove", "-y", "ghostty"], self._log,
             lambda ok: (row.set_undo_done(ok), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
+
+    def _check_ghostty_default(self):
+        try:
+            p = Path(os.path.expanduser("~/.config/xdg-terminals.list"))
+            return "com.mitchellh.ghostty.desktop" in p.read_text()
+        except Exception:
+            return False
+
+    def _on_ghostty_default(self, row):
+        row.set_working()
+        self._log("\n▶  Назначение Ghostty терминалом по умолчанию...\n")
+        win = self.get_root()
+        if hasattr(win, "start_progress"): win.start_progress("Настройка терминала по умолчанию...")
+        def _do():
+            p = Path(os.path.expanduser("~/.config/xdg-terminals.list"))
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text("com.mitchellh.ghostty.desktop\n")
+            ok = self._check_ghostty_default()
+            GLib.idle_add(row.set_done, ok)
+            GLib.idle_add(self._log, "✔  Готово!\n" if ok else "✘  Ошибка\n")
+            if hasattr(win, "stop_progress"): win.stop_progress(ok)
+        threading.Thread(target=_do, daemon=True).start()
+
+    def _on_ghostty_default_undo(self, row):
+        row.set_working()
+        self._log("\n▶  Сброс терминала по умолчанию...\n")
+        win = self.get_root()
+        if hasattr(win, "start_progress"): win.start_progress("Сброс терминала по умолчанию...")
+        def _do():
+            p = Path(os.path.expanduser("~/.config/xdg-terminals.list"))
+            if p.exists():
+                p.unlink()
+            GLib.idle_add(row.set_undo_done, True)
+            GLib.idle_add(self._log, "✔  Сброшено\n")
+            if hasattr(win, "stop_progress"): win.stop_progress(True)
+        threading.Thread(target=_do, daemon=True).start()
+
 
     def _build_shortcuts_group(self, body):
         group = Adw.PreferencesGroup()
@@ -782,6 +830,15 @@ class TerminalPage(Gtk.Box):
 
         run_step(self._row_ghostty_install, "Установка Ghostty",
             lambda: backend.run_privileged_sync(["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y --nogpgcheck ghostty"], self._log))
+
+        run_step(self._row_ghostty_default, "Ghostty по умолчанию",
+            lambda: _sync_ghostty_default())
+
+        def _sync_ghostty_default():
+            p = Path(os.path.expanduser("~/.config/xdg-terminals.list"))
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text("com.mitchellh.ghostty.desktop\n")
+            return True
 
         def _sync_shortcut(uid, name, cmd, binding):
             path = f"/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/{uid}/"

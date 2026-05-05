@@ -19,6 +19,18 @@
           "check": { "type": "which", "value": "ghostty" },
           "action": { "type": "privileged", "cmd": ["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y --nogpgcheck ghostty"] }
         },
+        {
+          "id": "ghostty_default",
+          "type": "command_row",
+          "title": "Ghostty по умолчанию",
+          "subtitle": "~/.config/xdg-terminals.list → com.mitchellh.ghostty.desktop",
+          "icon": "starred-symbolic",
+          "button_label": "Применить",
+          "button_done_label": "Применено",
+          "button_style": "flat",
+          "check": { "type": "builtin", "fn": "check_ghostty_default" },
+          "action": { "type": "builtin", "fn": "set_ghostty_default" }
+        }
       ]
     },
     {

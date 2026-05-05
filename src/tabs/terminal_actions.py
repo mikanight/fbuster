@@ -81,6 +81,28 @@ def _add_custom_keybinding(index: int) -> None:
 
 
 _GHOSTTY_CONFIG = Path.home() / ".config" / "ghostty" / "config"
+_XDG_TERMINALS = Path.home() / ".config" / "xdg-terminals.list"
+_GHOSTTY_DESKTOP = "com.mitchellh.ghostty.desktop"
+
+
+def check_ghostty_default(_page: Any, _arg: Any) -> bool:
+    try:
+        return _GHOSTTY_DESKTOP in _XDG_TERMINALS.read_text()
+    except OSError:
+        return False
+
+
+def set_ghostty_default(page, _arg: Any) -> bool:
+    try:
+        _XDG_TERMINALS.parent.mkdir(parents=True, exist_ok=True)
+        _XDG_TERMINALS.write_text(_GHOSTTY_DESKTOP + "\n")
+        if page:
+            page.log("\n✔  Ghostty терминал по умолчанию!\n")
+        return True
+    except OSError as e:
+        if page:
+            page.log(f"\n✘  Ошибка: {e}\n")
+        return False
 
 
 def check_ghostty_font(_page: Any, _arg: Any) -> bool:
