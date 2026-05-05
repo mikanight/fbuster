@@ -1,5 +1,6 @@
 
 import os
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -247,7 +248,7 @@ class TerminalPage(Gtk.Box):
 
         self._row_ghostty_default = SettingRow(
             "starred-symbolic", "Ghostty по умолчанию",
-            "~/.config/xdg-terminals.list + xdg-mime", "Применить",
+            "Симлинк gnome-terminal → ghostty", "Применить",
             self._on_ghostty_default,
             self._check_ghostty_default,
             "term_ghostty_default", "Применено",
@@ -275,8 +276,8 @@ class TerminalPage(Gtk.Box):
 
     def _check_ghostty_default(self):
         try:
-            p = Path(os.path.expanduser("~/.config/xdg-terminals.list"))
-            return "com.mitchellh.ghostty.desktop" in p.read_text()
+            link = Path("/usr/local/bin/gnome-terminal")
+            return link.is_symlink() and os.readlink(str(link)) == shutil.which("ghostty")
         except Exception:
             return False
 
@@ -286,10 +287,11 @@ class TerminalPage(Gtk.Box):
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Настройка терминала по умолчанию...")
         def _do():
-            p = Path(os.path.expanduser("~/.config/xdg-terminals.list"))
-            p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text("com.mitchellh.ghostty.desktop\n")
-            subprocess.run(["xdg-mime", "default", "com.mitchellh.ghostty.desktop", "x-scheme-handler/terminal"])
+            ghostty = shutil.which("ghostty") or "/usr/bin/ghostty"
+            backend.run_privileged_sync(
+                ["bash", "-c", f"mkdir -p /usr/local/bin && ln -sf {shlex.quote(ghostty)} /usr/local/bin/gnome-terminal"],
+                self._log,
+            )
             ok = self._check_ghostty_default()
             GLib.idle_add(row.set_done, ok)
             GLib.idle_add(self._log, "✔  Готово!\n" if ok else "✘  Ошибка\n")
@@ -302,10 +304,10 @@ class TerminalPage(Gtk.Box):
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Сброс терминала по умолчанию...")
         def _do():
-            p = Path(os.path.expanduser("~/.config/xdg-terminals.list"))
-            if p.exists():
-                p.unlink()
-            subprocess.run(["xdg-mime", "default", "org.gnome.Terminal.desktop", "x-scheme-handler/terminal"])
+            backend.run_privileged_sync(
+                ["rm", "-f", "/usr/local/bin/gnome-terminal"],
+                self._log,
+            )
             GLib.idle_add(row.set_undo_done, True)
             GLib.idle_add(self._log, "✔  Сброшено\n")
             if hasattr(win, "stop_progress"): win.stop_progress(True)
@@ -837,11 +839,11 @@ class TerminalPage(Gtk.Box):
             lambda: _sync_ghostty_default())
 
         def _sync_ghostty_default():
-            p = Path(os.path.expanduser("~/.config/xdg-terminals.list"))
-            p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text("com.mitchellh.ghostty.desktop\n")
-            subprocess.run(["xdg-mime", "default", "com.mitchellh.ghostty.desktop", "x-scheme-handler/terminal"])
-            return True
+            ghostty = shutil.which("ghostty") or "/usr/bin/ghostty"
+            return backend.run_privileged_sync(
+                ["bash", "-c", f"mkdir -p /usr/local/bin && ln -sf {shlex.quote(ghostty)} /usr/local/bin/gnome-terminal"],
+                self._log,
+            )
 
         def _sync_shortcut(uid, name, cmd, binding):
             path = f"/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/{uid}/"

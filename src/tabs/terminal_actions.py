@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import os
+import shlex
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -81,32 +83,26 @@ def _add_custom_keybinding(index: int) -> None:
 
 
 _GHOSTTY_CONFIG = Path.home() / ".config" / "ghostty" / "config"
-_XDG_TERMINALS = Path.home() / ".config" / "xdg-terminals.list"
-_GHOSTTY_DESKTOP = "com.mitchellh.ghostty.desktop"
 
 
 def check_ghostty_default(_page: Any, _arg: Any) -> bool:
     try:
-        return _GHOSTTY_DESKTOP in _XDG_TERMINALS.read_text()
-    except OSError:
+        link = Path("/usr/local/bin/gnome-terminal")
+        return link.is_symlink() and os.readlink(str(link)) == shutil.which("ghostty")
+    except Exception:
         return False
 
 
 def set_ghostty_default(page, _arg: Any) -> bool:
-    try:
-        _XDG_TERMINALS.parent.mkdir(parents=True, exist_ok=True)
-        _XDG_TERMINALS.write_text(_GHOSTTY_DESKTOP + "\n")
-        subprocess.run(
-            ["xdg-mime", "default", _GHOSTTY_DESKTOP, "x-scheme-handler/terminal"],
-            capture_output=True, timeout=5,
-        )
-        if page:
-            page.log("\n✔  Ghostty терминал по умолчанию!\n")
-        return True
-    except OSError as e:
-        if page:
-            page.log(f"\n✘  Ошибка: {e}\n")
-        return False
+    ghostty = shutil.which("ghostty") or "/usr/bin/ghostty"
+    log_fn = page.log if page else lambda _: None
+    ok = backend.run_privileged_sync(
+        ["bash", "-c", f"mkdir -p /usr/local/bin && ln -sf {shlex.quote(ghostty)} /usr/local/bin/gnome-terminal"],
+        log_fn,
+    )
+    if page:
+        page.log("\n✔  Ghostty терминал по умолчанию!\n" if ok else "\n✘  Ошибка\n")
+    return ok
 
 
 def check_ghostty_font(_page: Any, _arg: Any) -> bool:

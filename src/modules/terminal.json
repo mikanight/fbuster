@@ -23,7 +23,7 @@
           "id": "ghostty_default",
           "type": "command_row",
           "title": "Ghostty по умолчанию",
-          "subtitle": "xdg-terminals.list + xdg-mime default",
+          "subtitle": "Симлинк gnome-terminal → ghostty (GIO fallback)",
           "icon": "starred-symbolic",
           "button_label": "Применить",
           "button_done_label": "Применено",
