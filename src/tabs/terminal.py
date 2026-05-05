@@ -237,7 +237,7 @@ class TerminalPage(Gtk.Box):
 
         self._row_ghostty_install = SettingRow(
             "utilities-terminal-symbolic", "Установить Ghostty",
-            "dnf copr enable scottames/ghostty && dnf install ghostty", "Установить",
+            "dnf copr enable scottames/ghostty &amp;&amp; dnf install ghostty", "Установить",
             self._on_install_ghostty,
             lambda: backend.check_app_installed({"check": ["which", "ghostty"]}),
             "term_ghostty_install", "Установлен",

@@ -12,7 +12,7 @@
           "id": "ghostty_install",
           "type": "command_row",
           "title": "Установить Ghostty",
-          "subtitle": "dnf copr enable scottames/ghostty && dnf install ghostty",
+          "subtitle": "dnf copr enable scottames/ghostty &amp;&amp; dnf install ghostty",
           "icon": "utilities-terminal-symbolic",
           "button_label": "Установить",
           "button_done_label": "Установлен",
