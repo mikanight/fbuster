@@ -19,6 +19,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 
 from core import backend, config
+from core.checks import invalidate_app_detection_caches
 
 _BORG_CREATE_PROGRESS_RE = re.compile(
     r"^([\d.,]+\s+\S+)\s+O\s+([\d.,]+\s+\S+)\s+C\s+([\d.,]+\s+\S+)\s+D\s+"
@@ -393,7 +394,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
             box.set_margin_end(7)
             return box
 
-
         menu_row = Gtk.ListBoxRow()
         menu_row.set_name("settings")
         menu_row.set_activatable(True)
@@ -427,6 +427,91 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         name = row.get_name()
         if name == "settings":
             self._settings_popover.popup()
+
+    def _on_window_is_active(self, _win, _pspec):
+        if not self.get_property("is-active"):
+            return
+        now = time.monotonic()
+        if now - self._last_app_detection_cache_flush >= 5.0:
+            self._last_app_detection_cache_flush = now
+            invalidate_app_detection_caches()
+        if self._stack.get_visible_child_name() != "flatpak":
+            return
+        page = self._pages.get("flatpak")
+        if page is not None and hasattr(page, "on_window_is_active"):
+            page.on_window_is_active()
+
+    def _on_stack_child_changed(self, stack, _pspec):
+        name = stack.get_visible_child_name()
+        if name == "borg":
+            self._nav_list.unselect_all()
+            self._borg_list.select_row(self._borg_row)
+        else:
+            self._borg_list.unselect_all()
+            for row in self._nav_rows:
+                if row.get_name() == name:
+                    self._nav_list.select_row(row)
+                    break
+        page = self._pages.get(name) if name else None
+        if page is not None and hasattr(page, "on_tab_visible"):
+            page.on_tab_visible()
+
+    def _on_nav_row_selected(self, _, row):
+        if row is not None:
+            self._stack.set_visible_child_name(row.get_name())
+
+    _ICON_SIZE_WITH_LABELS = 16
+    _ICON_SIZE_ICONS_ONLY  = 21
+    _SIDEBAR_ICONS_ONLY_WIDTH = 44
+    _SIDEBAR_LABELS_THRESHOLD = 110
+
+    def _apply_tab_label_visibility(self, show: bool | None = None, from_drag: bool = False):
+        if show is None:
+            show = config.state_get("show_tab_labels", True)
+        icon_size = self._ICON_SIZE_WITH_LABELS if show else self._ICON_SIZE_ICONS_ONLY
+
+        for img, lbl in zip(
+            self._nav_images + self._bottom_images,
+            self._nav_labels + self._bottom_labels,
+            strict=True,
+        ):
+            img.set_pixel_size(icon_size)
+            lbl.set_visible(show)
+
+        self._version_label_sidebar.set_visible(show)
+
+        if show:
+            self._sidebar_widget.set_size_request(90, -1)
+            self._bottom_list_widget.set_size_request(90, -1)
+            if not from_drag:
+                saved = getattr(self, "_sidebar_saved_width", None)
+                if saved:
+                    GLib.idle_add(self._split_view.set_position, saved)
+        else:
+            if not from_drag:
+                self._sidebar_saved_width = self._split_view.get_position()
+            self._sidebar_widget.set_size_request(self._SIDEBAR_ICONS_ONLY_WIDTH, -1)
+            self._bottom_list_widget.set_size_request(self._SIDEBAR_ICONS_ONLY_WIDTH, -1)
+            GLib.idle_add(self._split_view.set_position, self._SIDEBAR_ICONS_ONLY_WIDTH)
+
+    def _on_sidebar_position_changed(self, paned, *_):
+        pos = paned.get_position()
+        currently_showing = bool(self._nav_labels and self._nav_labels[0].get_visible())
+        should_show = pos > self._SIDEBAR_LABELS_THRESHOLD
+
+        if should_show == currently_showing:
+            return
+
+        if not should_show:
+            self._sidebar_saved_width = pos
+
+        config.state_set("show_tab_labels", should_show)
+        self._apply_tab_label_visibility(show=should_show, from_drag=True)
+
+    def _on_show_tab_labels_changed(self, action, state):
+        action.set_state(state)
+        config.state_set("show_tab_labels", state.get_boolean())
+        self._apply_tab_label_visibility()
 
 
     def _build_log_panel(self):
