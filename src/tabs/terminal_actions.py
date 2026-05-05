@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import os
-import shlex
-import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -83,26 +81,6 @@ def _add_custom_keybinding(index: int) -> None:
 
 
 _GHOSTTY_CONFIG = Path.home() / ".config" / "ghostty" / "config"
-
-
-def check_ghostty_default(_page: Any, _arg: Any) -> bool:
-    try:
-        link = Path("/usr/local/bin/gnome-terminal")
-        return link.is_symlink() and os.readlink(str(link)) == shutil.which("ghostty")
-    except Exception:
-        return False
-
-
-def set_ghostty_default(page, _arg: Any) -> bool:
-    ghostty = shutil.which("ghostty") or "/usr/bin/ghostty"
-    log_fn = page.log if page else lambda _: None
-    ok = backend.run_privileged_sync(
-        ["bash", "-c", f"mkdir -p /usr/local/bin && ln -sf {shlex.quote(ghostty)} /usr/local/bin/gnome-terminal"],
-        log_fn,
-    )
-    if page:
-        page.log("\n✔  Ghostty терминал по умолчанию!\n" if ok else "\n✘  Ошибка\n")
-    return ok
 
 
 def check_ghostty_font(_page: Any, _arg: Any) -> bool:
