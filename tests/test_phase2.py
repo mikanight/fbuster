@@ -68,8 +68,9 @@ class TestSetupPyRemovals:
 
     def test_is_sisyphus_checks_fedora(self):
         src = setup_src()
-        assert "/etc/fedora-release" in src
+        assert "/etc/fedora-release" not in src
         assert "/etc/altlinux-release" not in src
+        assert "Fedora" in src
 
     def test_apt_get_not_in_commands(self):
         src = setup_src()

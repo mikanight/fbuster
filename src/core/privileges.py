@@ -64,6 +64,22 @@ _BLOCKED_RM_PATHS: frozenset[str] = frozenset({
 })
 
 
+_DANGEROUS_SHELL_PATTERNS: list[str] = [
+    r"curl\s+.*\s*\|\s*(ba)?sh",
+    r"wget\s+.*\s*\|\s*(ba)?sh",
+    r"\bchmod\s+.*[47]77",
+    r"\bchmod\s+.*[ug]\+s",
+    r">\s*/dev/",
+]
+
+def _validate_shell_script(script: str) -> str | None:
+    import re
+    for pattern in _DANGEROUS_SHELL_PATTERNS:
+        if re.search(pattern, script, re.IGNORECASE):
+            return f"bash/sh: опасный паттерн в скрипте ({pattern!r})"
+    return None
+
+
 def _check_args(cmd: Sequence[str]) -> str | None:
     if not cmd:
         return None
@@ -72,6 +88,13 @@ def _check_args(cmd: Sequence[str]) -> str | None:
     if name == "env":
         if len(args) < 2 or args[0] != "LC_ALL=C":
             return "env: разрешён только префикс LC_ALL=C для следующей команды"
+
+    if name in ("bash", "sh"):
+        for i, arg in enumerate(args):
+            if arg == "-c" and i + 1 < len(args):
+                err = _validate_shell_script(args[i + 1])
+                if err:
+                    return err
 
     if name == "rm":
         if "--no-preserve-root" in args:
@@ -238,7 +261,7 @@ def _create_and_verify_shell() -> subprocess.Popen | None:
 
     reader = threading.Thread(target=_reader, daemon=True)
     reader.start()
-    reader.join(timeout=60)
+    reader.join(timeout=10)
 
     if found[0] is True:
         return proc

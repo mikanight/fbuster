@@ -3,7 +3,6 @@ import os
 import subprocess
 import threading
 import traceback
-import urllib.request
 from pathlib import Path
 
 CONFIG_DIR  = Path.home() / ".config" / "altbooster"
@@ -11,7 +10,13 @@ CONFIG_FILE = CONFIG_DIR / "window.json"
 STATE_FILE  = CONFIG_DIR / "state.json"
 SYSTEMD_USER_DIR = Path.home() / ".config" / "systemd" / "user"
 
-VERSION = "6.0.0-dev"
+_PYPROJECT = Path(__file__).resolve().parent.parent.parent / "pyproject.toml"
+try:
+    import tomllib
+    _data = tomllib.loads(_PYPROJECT.read_text(encoding="utf-8"))
+    VERSION = str(_data.get("project", {}).get("version", "6.0.0-dev"))
+except Exception:
+    VERSION = "6.0.0-dev"
 
 DEBUG: bool = False
 INITIAL_TAB: str = ""
@@ -147,40 +152,3 @@ def is_btrfs() -> bool:
     except OSError:
         return False
 
-
-_GITHUB_API = "https://api.github.com/repos/plafonlinux/altbooster"
-
-
-def _fetch_github(path: str) -> object:
-    url = f"{_GITHUB_API}/{path}"
-    req = urllib.request.Request(url, headers={"User-Agent": "ALTBooster"})
-    with urllib.request.urlopen(req, timeout=5) as response:
-        return json.loads(response.read().decode())
-
-
-def check_update(on_result):
-    def _worker():
-        try:
-            data = _fetch_github("releases/latest")
-            on_result(data.get("tag_name", "").lstrip("v"))
-        except Exception:
-            if DEBUG:
-                traceback.print_exc()
-            on_result(None)
-    threading.Thread(target=_worker, daemon=True).start()
-
-
-def check_update_beta(on_result):
-    def _worker():
-        try:
-            releases = _fetch_github("releases?per_page=10")
-            for r in releases:
-                if r.get("prerelease"):
-                    on_result(r.get("tag_name", "").lstrip("v"))
-                    return
-            on_result(None)
-        except Exception:
-            if DEBUG:
-                traceback.print_exc()
-            on_result(None)
-    threading.Thread(target=_worker, daemon=True).start()

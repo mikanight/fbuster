@@ -50,6 +50,9 @@ BUILTIN_REGISTRY: dict[str, Callable] = {
     "setup_lact_wheel":         setup_lact_wheel,
     "apply_lact_config":        apply_lact_config,
 }
+
+_MAX_CHECK_WORKERS = 8
+
 from ui.widgets import (
     clear_status,
     make_button,
@@ -466,7 +469,7 @@ class DynamicPage(Gtk.Box):
             rows = list(self._rows_with_checks)
             if not rows:
                 return
-            with ThreadPoolExecutor(max_workers=min(8, len(rows))) as pool:
+            with ThreadPoolExecutor(max_workers=min(_MAX_CHECK_WORKERS, len(rows))) as pool:
                 futures = {pool.submit(run_check, getattr(r, "_dp_check", None)): r for r in rows}
                 for future in as_completed(futures):
                     row = futures[future]

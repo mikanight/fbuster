@@ -57,4 +57,5 @@ class TestAptGetCleanups:
 class TestPaths:
     def test_setup_py_fedora_release(self):
         s = read_file("tabs/setup.py")
-        assert "/etc/fedora-release" in s
+        assert "Fedora" in s
+        assert "/etc/fedora-release" not in s

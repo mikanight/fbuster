@@ -68,7 +68,7 @@ def main() -> int:
 
     config.init_runtime(debug=debug, initial_tab=initial_tab)
 
-    from ui import PlafonWindow
+    from ui import FedoraBoosterWindow
 
     class FedoraBoosterApp(Adw.Application):
         def __init__(self):
@@ -84,7 +84,7 @@ def main() -> int:
             quit_action.connect("activate", lambda *_: self.quit())
             self.add_action(quit_action)
             self.set_accels_for_action("app.quit", ["<Primary>q"])
-            win = PlafonWindow(application=app)
+            win = FedoraBoosterWindow(application=app)
             win.present()
 
     try:

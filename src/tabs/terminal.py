@@ -203,7 +203,7 @@ class TerminalPage(Gtk.Box):
         def _done(ok):
             row.set_done(ok)
             if hasattr(win, "stop_progress"): win.stop_progress(ok)
-        backend.run_privileged(["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y --nogpgcheck ghostty"], self._log, _done)
+        backend.run_privileged(["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y ghostty"], self._log, _done)
 
     def _on_remove_ghostty(self, row):
         row.set_working()

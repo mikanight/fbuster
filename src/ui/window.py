@@ -40,6 +40,9 @@ from tabs.scheduler import SchedulerPage
 
 
 class FedoraBoosterWindow(Adw.ApplicationWindow):
+    _MAX_LOG_FILE_SIZE = 2 * 1024 * 1024  # 2MB before rotation
+    _SEARCH_WARMUP_DELAY_MS = 2000
+
     _MAIN_TABS = [
         ("setup",       "Начало",          "go-home-symbolic",             SetupPage),
         ("apps",        "Приложения",      "grid-large-symbolic",          AppsPage),
@@ -58,10 +61,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         start_time = time.time()
         super().__init__(**kwargs)
 
-        icon_theme = "Adwaita"
-        if not os.path.exists("/usr/share/icons/Adwaita"):
-            icon_theme = "Adwaita"
-        Gtk.Settings.get_default().set_property("gtk-icon-theme-name", icon_theme)
+        Gtk.Settings.get_default().set_property("gtk-icon-theme-name", "Adwaita")
 
         _icons_base = Path(__file__).parent.parent.parent / "icons"
 
@@ -112,6 +112,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         settings = self._load_settings()
 
         self._log_file = config.CONFIG_DIR / "altbooster.log"
+        self._setup_logging()
         threading.Thread(target=self._log_writer_loop, daemon=True).start()
 
         self.set_default_size(settings.get("width", 740), settings.get("height", 880))
@@ -590,7 +591,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
     def _setup_logging(self):
         try:
             os.makedirs(config.CONFIG_DIR, exist_ok=True)
-            if self._log_file.exists() and self._log_file.stat().st_size > 2 * 1024 * 1024:
+            if self._log_file.exists() and self._log_file.stat().st_size > self._MAX_LOG_FILE_SIZE:
                 shutil.move(self._log_file, self._log_file.with_suffix(".log.old"))
 
             sys_info = [f"v{config.VERSION}"]
@@ -672,7 +673,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         self._hide_op_card_if_idle()
         if config.INITIAL_TAB and config.INITIAL_TAB in self._pages:
             GLib.idle_add(self._stack.set_visible_child_name, config.INITIAL_TAB)
-        GLib.timeout_add(2000, self._warmup_search_cache)
+        GLib.timeout_add(self._SEARCH_WARMUP_DELAY_MS, self._warmup_search_cache)
 
     def _warmup_search_cache(self) -> bool:
         from ui.global_search import build_all_search_items
@@ -1005,7 +1006,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         card.append(top)
 
         click = Gtk.GestureClick()
-        click.connect("released", self._on_op_card_clicked)
         card.add_controller(click)
         card.set_cursor(Gdk.Cursor.new_from_name("pointer"))
 
@@ -1061,8 +1061,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
 
         GLib.idle_add(_do)
 
-    def _on_op_card_clicked(self, gesture, n_press, x, y):
-        pass
 
     def _on_stop_clicked(self, _):
         if not self._on_cancel_cb:
@@ -1194,7 +1192,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
             self._set_op_detail_lines(line, "", "")
 
     def _log_writer_loop(self):
-        self._setup_logging()
         try:
             log_f = open(self._log_file, "a", encoding="utf-8")
         except Exception:

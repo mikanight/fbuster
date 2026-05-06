@@ -184,19 +184,24 @@ def check_app_installed(source: dict) -> bool:
         return False
 
 
+_VM_DIRTY_BYTES = 67108864
+_JOURNAL_MAX_USE = "100M"
+
+
 def is_vm_dirty_optimized() -> bool:
     try:
         content = Path("/etc/sysctl.d/90-dirty.conf").read_text(encoding="utf-8")
-        return "67108864" in content
+        return str(_VM_DIRTY_BYTES) in content
     except OSError:
         return False
 
 
 def is_drive_menu_patched() -> bool:
     try:
+        import re
         ext_path = "/usr/share/gnome-shell/extensions/drive-menu@gnome-shell-extensions.gcampax.github.com/extension.js"
         content = Path(ext_path).read_text(encoding="utf-8")
-        return "this._mounts.some" in content
+        return bool(re.search(r"this\._mounts\.some\b", content))
     except OSError:
         return False
 
@@ -205,7 +210,7 @@ def is_journal_optimized() -> bool:
     paths = ["/etc/systemd/journald.conf", "/etc/systemd/journald.conf.d/99-altbooster.conf"]
     for p in paths:
         try:
-            if "SystemMaxUse=100M" in Path(p).read_text(encoding="utf-8"):
+            if f"SystemMaxUse={_JOURNAL_MAX_USE}" in Path(p).read_text(encoding="utf-8"):
                 return True
         except OSError:
             continue

@@ -14,7 +14,6 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk
 
 from core import backend
-import os
 
 _KERNEL_IMAGE_SCHED_EXT = "kernel"
 _SYSFS_SCHED_EXT = "/sys/kernel/sched_ext"

@@ -12,9 +12,23 @@ gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Adw, Gdk, GLib, Gtk, Pango
 
-# Fixed layout for AppRow trailing area (CSS max-width alone does not cap Gtk measure).
-_APP_ACTIONS_COL_W = 560
+from core import backend, config
+from core.checks import invalidate_flatpak_cache
+from ui.install_preview_dialog import InstallPreviewDialog
+from ui.widgets import (
+    clear_status,
+    make_button,
+    make_icon,
+    make_status_icon,
+    set_status_error,
+    set_status_ok,
+)
+
+# Layout constants for AppRow
+_APP_ACTIONS_COL_W = 560  # width of the trailing actions column in px
 _APP_TRAILING_CLUSTER_W = _APP_ACTIONS_COL_W
+
+_KBD_STATE_KEY_PREFIX = "kbd"  # keyboard shortcut state keys bypass initial check_fn
 
 
 class _ActionsColumn(Gtk.Box):
@@ -106,18 +120,6 @@ def ensure_ab_source_badge_styles() -> None:
         )
     _ab_source_badge_css_registered = True
 
-
-from core import backend, config
-from core.checks import invalidate_flatpak_cache
-from ui.install_preview_dialog import InstallPreviewDialog
-from ui.widgets import (
-    clear_status,
-    make_button,
-    make_icon,
-    make_status_icon,
-    set_status_error,
-    set_status_ok,
-)
 
 _LOCAL_BIN_PATH_MARKER = "# altbooster: ~/.local/bin в PATH"
 
@@ -250,7 +252,7 @@ class SettingRow(Adw.ActionRow):
             self._set_ui(False)
         else:
             # Пустой ключ: всегда подтягиваем UI через check_fn (см. комментарий к state_key выше).
-            if not state_key or "kbd" not in state_key:
+            if not state_key or _KBD_STATE_KEY_PREFIX not in state_key:
                 threading.Thread(target=self._refresh, daemon=True).start()
 
     def _on_btn_clicked(self, _):
@@ -830,7 +832,10 @@ class AppRow(Adw.ActionRow):
         ):
             cmd = ["epm", "play", "--remove", src["cmd"][2]]
         else:
-            if "monitor-control" in str(src):
+            label = src.get("label", "")
+            check_pkg = src.get("check", [None])[1] if isinstance(src.get("check"), list) else ""
+            is_monitor_control = "monitor-control" in label.lower() or "monitor-control" in str(check_pkg).lower()
+            if is_monitor_control:
                 cmd = [
                     "rm", "-rf",
                     os.path.expanduser("~/.local/share/monitor-control"),

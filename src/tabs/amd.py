@@ -15,11 +15,11 @@ class AmdPage(DynamicPage):
         try:
             import grp
             user = os.environ.get("USER")
-            groups = [g.gr_name for g in grp.getgrall() if user in g.gr_mem]
-            gid = os.getgid()
-            groups.append(grp.getgrgid(gid).gr_name)
-            return "wheel" in groups
-        except Exception:
+            if not user:
+                return False
+            wheel = grp.getgrnam("wheel")
+            return user in wheel.gr_mem
+        except (KeyError, Exception):
             return False
 
     def setup_lact_wheel(self):

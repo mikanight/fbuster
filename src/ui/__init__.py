@@ -1,3 +1,3 @@
 from ui.window import FedoraBoosterWindow
 
-PlafonWindow = FedoraBoosterWindow
+PlafonWindow = FedoraBoosterWindow  # устаревший alias, использовать FedoraBoosterWindow

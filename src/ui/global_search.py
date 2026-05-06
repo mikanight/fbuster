@@ -337,8 +337,6 @@ def _maintenance_task_items() -> list[GlobalSearchItem]:
     return items
 
 
-def _tweaks_section_items() -> list[GlobalSearchItem]:
-    return []
 
 
 def _scheduler_section_items() -> list[GlobalSearchItem]:
@@ -470,7 +468,6 @@ def build_all_search_items(
     items.extend(_extension_catalog_items())
     items.extend(_flatpak_section_items())
     items.extend(_flatpak_installed_app_items())
-    items.extend(_tweaks_section_items())
     items.extend(_scheduler_section_items())
     return items
 
