@@ -459,7 +459,7 @@ class MirrorPage(Gtk.Box):
         self._sv_group = Adw.PreferencesGroup()
         self._sv_group.set_title("Субволюмы")
         self._sv_group.set_description(
-            "Снимки TimeSync (каталог .snapshots/altbooster) не показываются: они уже внутри выбранного @home."
+            "Снимки TimeSync (каталог .snapshots/fedorabooster) не показываются: они уже внутри выбранного @home."
         )
         body.append(self._sv_group)
 
@@ -574,7 +574,7 @@ class MirrorPage(Gtk.Box):
                 def _is_timesync_snapshot_subvol(path: str) -> bool:
                     # Снэпшоты вкладки «Снэпшоты»: вложенные субтомы под @home — дублируют зеркало
                     p = path.replace("\\", "/")
-                    return ".snapshots/altbooster" in p
+                    return ".snapshots/fedorabooster" in p
 
                 regular = [
                     p

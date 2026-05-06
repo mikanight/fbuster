@@ -121,7 +121,7 @@ def ensure_ab_source_badge_styles() -> None:
     _ab_source_badge_css_registered = True
 
 
-_LOCAL_BIN_PATH_MARKER = "# altbooster: ~/.local/bin в PATH"
+_LOCAL_BIN_PATH_MARKER = "# fedorabooster: ~/.local/bin в PATH"
 
 
 def _ensure_local_bin_in_shell_rc(log_fn) -> None:
@@ -161,7 +161,7 @@ def _ensure_local_bin_in_shell_rc(log_fn) -> None:
         existing = rc.read_text(encoding="utf-8") if rc.exists() else ""
         if _LOCAL_BIN_PATH_MARKER in existing:
             log_fn(
-                f"ℹ  {_rc_display(rc)}: блок для ~/.local/bin уже есть (ALT Booster).\n"
+                f"ℹ  {_rc_display(rc)}: блок для ~/.local/bin уже есть (Fedora Booster).\n"
             )
             return
         with rc.open("a", encoding="utf-8") as f:

@@ -94,17 +94,6 @@ def _eval_check_pair(kind: str, value) -> bool:
     return False
 
 
-def is_sudo_enabled() -> bool:
-    try:
-        result = subprocess.run(
-            ["groups", os.environ.get("SUDO_USER", os.environ.get("USER", ""))],
-            capture_output=True, text=True, timeout=5,
-        )
-        return "wheel" in result.stdout.lower()
-    except (subprocess.TimeoutExpired, OSError):
-        return False
-
-
 def is_flathub_enabled() -> bool:
     env = os.environ.copy()
     env["LC_ALL"] = "C"
@@ -207,7 +196,7 @@ def is_drive_menu_patched() -> bool:
 
 
 def is_journal_optimized() -> bool:
-    paths = ["/etc/systemd/journald.conf", "/etc/systemd/journald.conf.d/99-altbooster.conf"]
+    paths = ["/etc/systemd/journald.conf", "/etc/systemd/journald.conf.d/99-fedorabooster.conf"]
     for p in paths:
         try:
             if f"SystemMaxUse={_JOURNAL_MAX_USE}" in Path(p).read_text(encoding="utf-8"):

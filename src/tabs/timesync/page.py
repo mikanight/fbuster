@@ -669,7 +669,7 @@ class BorgPage(Gtk.Box):
     def _tm_on_create(self):
         repo_path = self._row_repo_path.get_text().strip() or config.state_get("borg_repo_path", "") or ""
         if not repo_path:
-            repo_path = str(Path.home() / ".local" / "share" / "altbooster" / "backup")
+            repo_path = str(Path.home() / ".local" / "share" / "fedorabooster" / "backup")
         config.state_set("borg_repo_path", repo_path)
         self._tm_show_backup_scope_dialog(repo_path)
 
@@ -922,7 +922,7 @@ class BorgPage(Gtk.Box):
         if repo_path.startswith(str(home)):
             excludes.append(repo_path)
 
-        meta_dir = Path("/tmp/altbooster-backup-meta")
+        meta_dir = Path("/tmp/fedorabooster-backup-meta")
         backend.generate_flatpak_meta(meta_dir, 0)
         backend.generate_extensions_meta(meta_dir)
         backend.generate_system_meta(
@@ -1160,17 +1160,17 @@ class BorgPage(Gtk.Box):
         self._on_dest_type_changed(self._row_dest_type, None)
 
     def _build_sources_group(self):
-        grp_altbooster = Adw.PreferencesGroup()
-        grp_altbooster.set_title("Настройки Fedora Booster")
-        grp_altbooster.set_description("~/.config/altbooster/ — пресеты и конфигурация")
-        self._body.append(grp_altbooster)
+        grp_config = Adw.PreferencesGroup()
+        grp_config.set_title("Настройки Fedora Booster")
+        grp_config.set_description("~/.config/fedorabooster/ — пресеты и конфигурация")
+        self._body.append(grp_config)
 
-        self._sw_altbooster = Adw.SwitchRow()
-        self._sw_altbooster.set_title("Включить в резервную копию")
-        self._sw_altbooster.add_prefix(make_icon("emblem-system-symbolic"))
-        self._sw_altbooster.set_active(config.state_get("borg_src_altbooster", True))
-        self._sw_altbooster.connect("notify::active", lambda s, _: config.state_set("borg_src_altbooster", s.get_active()))
-        grp_altbooster.add(self._sw_altbooster)
+        self._sw_config = Adw.SwitchRow()
+        self._sw_config.set_title("Включить в резервную копию")
+        self._sw_config.add_prefix(make_icon("emblem-system-symbolic"))
+        self._sw_config.set_active(config.state_get("borg_src_fedorabooster", True))
+        self._sw_config.connect("notify::active", lambda s, _: config.state_set("borg_src_fedorabooster", s.get_active()))
+        grp_config.add(self._sw_config)
 
 
         grp_home = Adw.PreferencesGroup()
@@ -1984,7 +1984,7 @@ class BorgPage(Gtk.Box):
             return repo_path
 
         # Borg может инициализироваться только в пустой каталог.
-        base_name = "altbooster-borg-repo"
+        base_name = "fedorabooster-borg-repo"
         candidate = p / base_name
         idx = 2
         while candidate.exists() and not candidate.is_dir():
@@ -2053,7 +2053,7 @@ class BorgPage(Gtk.Box):
         opts = {}
         paths = []
         home = Path.home()
-        if config.state_get("borg_src_altbooster", True):
+        if config.state_get("borg_src_fedorabooster", True):
             paths.append(str(config.CONFIG_DIR))
         if config.state_get("borg_src_home", False):
             opts["home_dirs"] = config.state_get("borg_home_dirs", [])
@@ -2109,7 +2109,7 @@ class BorgPage(Gtk.Box):
         if opts.get("custom_paths"):
             paths.extend(opts["custom_paths"])
 
-        meta_dir = Path("/tmp/altbooster-backup-meta")
+        meta_dir = Path("/tmp/fedorabooster-backup-meta")
         if opts.get("flatpak_apps") or opts.get("flatpak_remotes"):
             backend.generate_flatpak_meta(meta_dir, opts.get("flatpak_apps_source"))
         if opts.get("extensions"):
@@ -2214,7 +2214,7 @@ class BorgPage(Gtk.Box):
         path = backend.find_gvfs_google_drive()
         win = self.get_root()
         if path:
-            dest = path.rstrip("/") + "/ALTBoosterBackup"
+            dest = path.rstrip("/") + "/FedoraBoosterBackup"
             self._row_repo_path.set_text(dest)
             self._save_repo_settings()
             self._log(f"✔  Путь к Google Drive: {path}\n")

@@ -16,7 +16,7 @@
   <section id="search-install">
     <title>Поиск и установка</title>
     <list>
-      <item><p>Выберите источник поиска: <em>p11</em>, <em>Sisyphus</em>, <em>EPM Play</em> или <em>Flathub</em>.</p></item>
+      <item><p>Выберите источник поиска: <em>Fedora</em>, <em>RPM Fusion</em>, <em>COPR</em> или <em>Flathub</em>.</p></item>
       <item><p>Введите запрос и нажмите <key>Enter</key>.</p></item>
       <item><p>В результатах можно сразу установить пакет или добавить его в пользовательский список.</p></item>
       <item><p>Если в выбранном источнике ничего не найдено, приложение может предложить результаты из других источников.</p></item>
@@ -44,7 +44,7 @@
   <section id="tips">
     <title>Практические советы</title>
     <list>
-      <item><p>Для редкого софта сначала ищите в EPM Play и Flathub, затем в p11/Sisyphus.</p></item>
+      <item><p>Для редкого софта сначала ищите в COPR и Flathub, затем в основных репозиториях Fedora.</p></item>
       <item><p>Перед массовой установкой полезно сделать снимок/бэкап через TimeSync.</p></item>
       <item><p>Если источник недоступен, проверьте зеркало репозитория на вкладке <em>Начало</em>.</p></item>
     </list>

@@ -115,7 +115,15 @@ def _run_user_op(cmd: list, on_line, on_done) -> None:
     threading.Thread(target=_worker, daemon=True).start()
 
 
+_icon_index_lock = threading.Lock()
+_icon_index_cache: dict[str, str] | None = None
+
+
 def _build_icon_index() -> dict[str, str]:
+    global _icon_index_cache
+    with _icon_index_lock:
+        if _icon_index_cache is not None:
+            return dict(_icon_index_cache)
     index: dict[str, str] = {}
 
     for size in ("64x64", "128x128", "scalable"):
@@ -154,6 +162,8 @@ def _build_icon_index() -> dict[str, str]:
                 if app_id in index:
                     break
 
+    with _icon_index_lock:
+        _icon_index_cache = dict(index)
     return index
 
 
@@ -209,6 +219,8 @@ class FlatpakPage(Gtk.Box):
         self._fp_section_rows: dict[str, Gtk.Widget] = {}
         self._fp_app_rows: dict[str, Adw.ActionRow] = {}
         self._last_flatpak_list_refresh_mono: float = 0.0
+        self._load_apps_lock = threading.Lock()
+        self._loading_apps = False
 
         scroll, self._body = make_scrolled_page()
         self._scroll = scroll
@@ -266,7 +278,10 @@ class FlatpakPage(Gtk.Box):
 
 
     def _refresh(self):
+        global _icon_index_cache
         self._last_flatpak_list_refresh_mono = time.monotonic()
+        with _icon_index_lock:
+            _icon_index_cache = None
         self._fp_app_rows.clear()
         self._clear_apps_group()
         if self._refresh_btn:
@@ -291,19 +306,27 @@ class FlatpakPage(Gtk.Box):
         self._body.append(self._apps_group)
 
     def _load_apps(self):
-        if not _is_flatpak_available():
-            GLib.idle_add(self._show_unavailable_state)
-            return
-        if not backend.is_flathub_enabled():
-            GLib.idle_add(self._show_no_flathub_dialog)
-            return
-        apps = _list_flatpak_apps()
-        masked = _get_masked_ids()
-        icons = _build_icon_index()
-        for app in apps:
-            app.masked = app.app_id in masked
-            app.icon_path = icons.get(app.app_id)
-        GLib.idle_add(self._populate_apps, apps)
+        with self._load_apps_lock:
+            if self._loading_apps:
+                return
+            self._loading_apps = True
+        try:
+            if not _is_flatpak_available():
+                GLib.idle_add(self._show_unavailable_state)
+                return
+            if not backend.is_flathub_enabled():
+                GLib.idle_add(self._show_no_flathub_dialog)
+                return
+            apps = _list_flatpak_apps()
+            masked = _get_masked_ids()
+            icons = _build_icon_index()
+            for app in apps:
+                app.masked = app.app_id in masked
+                app.icon_path = icons.get(app.app_id)
+            GLib.idle_add(self._populate_apps, apps)
+        finally:
+            with self._load_apps_lock:
+                self._loading_apps = False
 
     def focus_search_target(self, key: str) -> bool:
         row: Gtk.Widget | None = None

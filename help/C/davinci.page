@@ -9,7 +9,7 @@
   <title>DaVinci Resolve</title>
 
   <p>
-    Вкладка автоматизирует типовые шаги для запуска DaVinci Resolve на ALT Linux:
+    Вкладка автоматизирует типовые шаги для запуска DaVinci Resolve на Fedora Linux:
     установка, проверка окружения и исправление частых проблем.
   </p>
 

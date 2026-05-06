@@ -576,7 +576,7 @@ class ExtensionsPage(Gtk.Box):
             key = "pk" if target_id.isdigit() else "uuid"
             url = f"https://extensions.gnome.org/extension-info/?{key}={target_id}&shell_version={shell_ver}"
 
-            req = urllib.request.Request(url, headers={"User-Agent": "ALTBooster"})
+            req = urllib.request.Request(url, headers={"User-Agent": "FedoraBooster"})
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read().decode())
 
@@ -766,7 +766,7 @@ class ExtensionsPage(Gtk.Box):
             try:
                 params = urllib.parse.urlencode({"search": query, "n_per_page": 10})
                 url = f"https://extensions.gnome.org/extension-query/?{params}"
-                req = urllib.request.Request(url, headers={"User-Agent": "ALTBooster"})
+                req = urllib.request.Request(url, headers={"User-Agent": "FedoraBooster"})
 
                 with urllib.request.urlopen(req, timeout=10) as response:
                     data = json.loads(response.read().decode())

@@ -5,7 +5,7 @@ import threading
 import traceback
 from pathlib import Path
 
-CONFIG_DIR  = Path.home() / ".config" / "altbooster"
+CONFIG_DIR  = Path.home() / ".config" / "fedorabooster"
 CONFIG_FILE = CONFIG_DIR / "window.json"
 STATE_FILE  = CONFIG_DIR / "state.json"
 SYSTEMD_USER_DIR = Path.home() / ".config" / "systemd" / "user"
@@ -39,7 +39,6 @@ def init_runtime(*, debug: bool = False, initial_tab: str = "") -> None:
     DEBUG = debug
     INITIAL_TAB = initial_tab
 
-PRESETS_DIR = CONFIG_DIR / "presets"
 
 DV_CACHE_DEFAULT = ""
 DV_PROXY_DEFAULT = ""

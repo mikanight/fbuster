@@ -2,15 +2,15 @@
       type="guide"
       id="index">
   <info>
-    <title type="link">ALT Booster</title>
-    <title type="text">ALT Booster</title>
-    <desc>Подробная справка по вкладкам ALT Booster и безопасным сценариям использования.</desc>
+    <title type="link">Fedora Booster</title>
+    <title type="text">Fedora Booster</title>
+    <desc>Подробная справка по вкладкам Fedora Booster и безопасным сценариям использования.</desc>
   </info>
 
-  <title>Справка ALT Booster</title>
+  <title>Справка Fedora Booster</title>
 
   <p>
-    ALT Booster — утилита для настройки и обслуживания ALT Linux с интерфейсом GTK4/Adwaita.
+    Fedora Booster — утилита для настройки и обслуживания Fedora Linux с интерфейсом GTK4/Adwaita.
     Эта справка описывает каждую вкладку в практическом формате:
     <em>что делает</em>, <em>когда применять</em>, <em>какие шаги выполнить</em>.
   </p>

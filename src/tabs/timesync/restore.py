@@ -234,7 +234,7 @@ class BorgArchiveBrowserDialog(Adw.Window):
         if not root_dirs:
             return ""
 
-        # Типичный Borg-путь: /home/<user>/... + служебный /tmp/altbooster-backup-meta.
+        # Типичный Borg-путь: /home/<user>/... + служебный /tmp/fedorabooster-backup-meta.
         if "home" in root_dirs:
             home_node = self._children.get("home", {"dirs": [], "files": []})
             home_dirs = home_node.get("dirs", [])
@@ -453,8 +453,8 @@ class BorgRestoreDialog(Adw.AlertDialog):
         sep.set_margin_top(4)
         box.append(sep)
 
-        self._cb_altbooster = Gtk.CheckButton(label="Настройки Fedora Booster")
-        self._cb_altbooster.set_active(True)
+        self._cb_config = Gtk.CheckButton(label="Настройки Fedora Booster")
+        self._cb_config.set_active(True)
         self._cb_flatpak = Gtk.CheckButton(label="Данные Flatpak")
         self._cb_flatpak.set_active(True)
         self._cb_files = Gtk.CheckButton(label="Пользовательские файлы")
@@ -470,7 +470,7 @@ class BorgRestoreDialog(Adw.AlertDialog):
         )
         self._cb_dconf = Gtk.CheckButton(label="Восстановить настройки GNOME (dconf)")
         self._cb_dconf.set_active(True)
-        box.append(self._cb_altbooster)
+        box.append(self._cb_config)
         box.append(self._cb_flatpak)
         box.append(self._cb_files)
         box.append(self._cb_packages)
@@ -523,7 +523,7 @@ class BorgRestoreDialog(Adw.AlertDialog):
                 items = backend.borg_list_archive(self._repo_path, self._archive_name)
                 for item in items:
                     p = (item.get("path") or "").rstrip("/")
-                    if p.endswith("tmp/altbooster-backup-meta/packages.txt") or p.endswith("altbooster-backup-meta/packages.txt"):
+                    if p.endswith("tmp/fedorabooster-backup-meta/packages.txt") or p.endswith("fedorabooster-backup-meta/packages.txt"):
                         has_packages_meta = True
                         break
             except Exception:
@@ -714,9 +714,9 @@ class BorgRestoreDialog(Adw.AlertDialog):
                 GLib.idle_add(self._finish, False, win)
                 return
 
-            meta_dir = extracted_root / "tmp" / "altbooster-backup-meta"
+            meta_dir = extracted_root / "tmp" / "fedorabooster-backup-meta"
             if not meta_dir.exists():
-                meta_dir = extracted_root / "altbooster-backup-meta"
+                meta_dir = extracted_root / "fedorabooster-backup-meta"
 
             _run_post_steps(meta_dir)
 
@@ -754,7 +754,7 @@ class BorgRestoreDialog(Adw.AlertDialog):
             threading.Thread(target=_worker, daemon=True).start()
 
         if use_user_remap:
-            tmp_root = Path(tempfile.mkdtemp(prefix="altbooster-restore-"))
+            tmp_root = Path(tempfile.mkdtemp(prefix="fedorabooster-restore-"))
             self._log(f"▶  Временная распаковка архива для переноса пользователя: {tmp_root}\n")
 
             def _after_extract_tmp(ok):

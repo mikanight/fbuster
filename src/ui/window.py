@@ -111,7 +111,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         self.set_title("Fedora Booster")
         settings = self._load_settings()
 
-        self._log_file = config.CONFIG_DIR / "altbooster.log"
+        self._log_file = config.CONFIG_DIR / "fedorabooster.log"
         self._setup_logging()
         threading.Thread(target=self._log_writer_loop, daemon=True).start()
 

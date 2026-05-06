@@ -28,7 +28,7 @@ def patch_drive_menu(on_log: OnLine, on_done: OnDone) -> None:
         "         this.menu.addMenuItem(item, 0);\n"
     )
 
-    fd, patch_path = tempfile.mkstemp(suffix=".patch", prefix="altbooster_drive_")
+    fd, patch_path = tempfile.mkstemp(suffix=".patch", prefix="fedorabooster_drive_")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(diff_content)

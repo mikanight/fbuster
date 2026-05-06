@@ -109,8 +109,6 @@ OPTIONAL_EXCLUDES = [
     },
 ]
 
-_OPTIONAL_PATHS = {p for g in OPTIONAL_EXCLUDES for p in g["paths"]}
-
 DEFAULT_EXCLUDES = [
     # пользовательские загрузки
     "~/Downloads",
@@ -294,108 +292,62 @@ def is_repo_initialized(repo_path: str) -> bool:
         return False
 
 
-def borg_repo_info(repo_path: str) -> dict | None:
-    try:
-        r = subprocess.run(
-            [_borg_exe(), "info", "--json", repo_path],
-            capture_output=True, text=True, encoding="utf-8", timeout=15,
-            env=_borg_env(repo_path),
-        )
-        if r.returncode == 0:
-            return json.loads(r.stdout)
-    except Exception:
-        pass
-    return None
-
-
-def _run_borg_async(cmd: list, on_line, on_done, cwd: str | None = None, env: dict | None = None) -> None:
+def borg_init(repo_path: str, on_line, on_done) -> None:
     def _worker():
-        ok = False
         try:
+            env = _borg_env(repo_path)
             proc = subprocess.Popen(
-                cmd,
+                [_borg_exe(), "init", "--encryption", "repokey-blake2", repo_path],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, encoding="utf-8",
-                cwd=cwd, env=env,
+                text=True, encoding="utf-8", env=env,
             )
             for line in proc.stdout:
                 GLib.idle_add(on_line, line)
             proc.wait()
-            ok = proc.returncode in (0, 1)
+            ok = proc.returncode == 0
         except Exception as e:
             GLib.idle_add(on_line, f"✘ Ошибка: {e}\n")
+            ok = False
         GLib.idle_add(on_done, ok)
 
     threading.Thread(target=_worker, daemon=True).start()
 
 
-def borg_init(repo_path: str, on_line, on_done) -> None:
-    cmd = [_borg_exe(), "init", "--encryption=repokey", repo_path]
-    env = _borg_env(repo_path)
-    env["BORG_NEW_PASSPHRASE"] = env.get("BORG_PASSPHRASE", "")
-    _run_borg_async(cmd, lambda line: on_line(_translate_borg_line(line)), on_done, env=env)
+def borg_create(
+    repo_path: str,
+    archive_name: str,
+    paths: list[str],
+    excludes: list[str],
+    on_line,
+    on_done,
+    exclude_caches: bool = True,
+) -> None:
+    def _worker():
+        try:
+            cmd = [_borg_exe(), "create", "--stats", "--compression", "lz4"]
+            if exclude_caches:
+                cmd.append("--exclude-caches")
+            cmd.append(f"{repo_path}::{archive_name}")
+            cmd += paths
+            for e in excludes:
+                cmd += ["--exclude", os.path.expanduser(e)]
 
+            env = _borg_env(repo_path)
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, encoding="utf-8", errors="replace", env=env,
+            )
+            for line in proc.stdout:
+                GLib.idle_add(on_line, line)
+            proc.wait()
+            ok = proc.returncode == 0
+        except Exception as e:
+            GLib.idle_add(on_line, f"✘ Ошибка: {e}\n")
+            ok = False
+        GLib.idle_add(on_done, ok)
 
-_BORG_TRANSLATIONS = {
-    "Saving files cache":                  "Сохранение кэша файлов",
-    "Saving chunks cache":                 "Сохранение кэша блоков",
-    "Saving cache config":                 "Сохранение конфигурации кэша",
-    "Repository:":                         "Репозиторий:",
-    "Archive name:":                       "Имя архива:",
-    "Archive fingerprint:":                "Отпечаток архива:",
-    "Time (start):":                       "Начало:",
-    "Time (end):":                         "Конец:",
-    "Duration:":                           "Длительность:",
-    "Number of files:":                    "Количество файлов:",
-    "Utilization of max. archive size:":   "Использование макс. размера архива:",
-    "Original size":                       "Исходный размер",
-    "Compressed size":                     "Сжатый размер",
-    "Deduplicated size":                   "Дедуплицированный размер",
-    "This archive:":                       "Этот архив:",
-    "All archives:":                       "Все архивы:",
-    "Unique chunks":                       "Уникальных блоков",
-    "Total chunks":                        "Всего блоков",
-    "Chunk index:":                        "Индекс блоков:",
-    "minutes":                             "мин.",
-    "seconds":                             "сек.",
-    "minute":                              "мин.",
-    "second":                              "сек.",
-    "IMPORTANT: you will need both KEY AND PASSPHRASE to access this repo!":
-    "ВАЖНО: для доступа к этому хранилищу понадобятся И КЛЮЧ, И ПАРОЛЬНАЯ ФРАЗА!",
-    "Key storage location depends on the mode:":
-    "Место хранения ключа зависит от режима:",
-    "- repokey modes: key is stored in the repository directory.":
-    "- режимы repokey: ключ хранится в каталоге репозитория.",
-    "- keyfile modes: key is stored in the home directory of this user.":
-    "- режимы keyfile: ключ хранится в домашнем каталоге текущего пользователя.",
-    "For any mode, you should:":
-    "Для любого режима рекомендуется:",
-    "1. Export the borg key and store the result at a safe place:":
-    "1. Экспортируйте ключ borg и сохраните результат в безопасном месте:",
-    "2. Write down the borg key passphrase and store it at safe place.":
-    "2. Запишите парольную фразу ключа borg и храните её в безопасном месте.",
-}
-
-
-def _translate_borg_line(line: str) -> str:
-    for en, ru in _BORG_TRANSLATIONS.items():
-        if en in line:
-            line = line.replace(en, ru)
-    return line
-
-
-def borg_create(repo_path: str, archive_name: str, paths: list[str], excludes: list[str], on_line, on_done, exclude_caches: bool = True) -> None:
-    def _on_line_ru(line: str):
-        on_line(_translate_borg_line(line))
-
-    cmd = [_borg_exe(), "create", "--stats", "--progress", "--compression", "lz4"]
-    if exclude_caches:
-        cmd.append("--exclude-caches")
-    cmd.append(f"{repo_path}::{archive_name}")
-    cmd += paths
-    for e in excludes:
-        cmd += ["--exclude", os.path.expanduser(e)]
-    _run_borg_async(cmd, _on_line_ru, on_done, env=_borg_env(repo_path))
+    threading.Thread(target=_worker, daemon=True).start()
 
 
 def borg_estimate_create(
@@ -406,7 +358,7 @@ def borg_estimate_create(
 ) -> dict | None:
     if not repo_path or not paths:
         return None
-    archive_name = "altbooster-estimate"
+    archive_name = "fedorabooster-estimate"
     cmd = [_borg_exe(), "create", "--stats", "--dry-run", "--compression", "lz4"]
     if exclude_caches:
         cmd.append("--exclude-caches")
@@ -606,7 +558,7 @@ def borg_generate_ssh_key() -> bool:
     key_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         r = subprocess.run(
-            ["ssh-keygen", "-t", "ed25519", "-f", str(key_path), "-N", "", "-C", "altbooster-borg"],
+            ["ssh-keygen", "-t", "ed25519", "-f", str(key_path), "-N", "", "-C", "fedorabooster-borg"],
             capture_output=True, text=True, encoding="utf-8", timeout=15,
         )
         return r.returncode == 0
@@ -727,7 +679,7 @@ def find_gvfs_google_drive() -> str | None:
 
 def flatpak_apps_from_booster_list() -> list[tuple[str, str]]:
     paths_to_try = [
-        Path.home() / ".config" / "altbooster" / "apps.json",
+        config.CONFIG_DIR / "apps.json",
         Path(__file__).resolve().parent.parent / "modules" / "apps.json",
     ]
     for path in paths_to_try:
@@ -973,13 +925,13 @@ def write_systemd_units(repo_path: str, paths: list[str], calendar_expr: str) ->
         "Type=oneshot\n"
         f"EnvironmentFile={_BORG_ENV_FILE}\n"
         "ExecStart=/bin/bash -c '"
-        "mkdir -p /tmp/altbooster-backup-meta && "
-        "flatpak list --app --columns=application > /tmp/altbooster-backup-meta/flatpak-apps.txt 2>/dev/null; "
-        "flatpak remotes --columns=name,url > /tmp/altbooster-backup-meta/flatpak-remotes.txt 2>/dev/null; "
-        "rpm -qa --queryformat \"%%{NAME}\\n\" | sort -u > /tmp/altbooster-backup-meta/packages.txt 2>/dev/null; "
-        "dconf dump / > /tmp/altbooster-backup-meta/dconf-full.ini 2>/dev/null; "
+        "mkdir -p /tmp/fedorabooster-backup-meta && "
+        "flatpak list --app --columns=application > /tmp/fedorabooster-backup-meta/flatpak-apps.txt 2>/dev/null; "
+        "flatpak remotes --columns=name,url > /tmp/fedorabooster-backup-meta/flatpak-remotes.txt 2>/dev/null; "
+        "rpm -qa --queryformat \"%%{NAME}\\n\" | sort -u > /tmp/fedorabooster-backup-meta/packages.txt 2>/dev/null; "
+        "dconf dump / > /tmp/fedorabooster-backup-meta/dconf-full.ini 2>/dev/null; "
         f'{borg_exe} create --stats --compression lz4 "{repo_path}::$(hostname)-$(date +%%Y-%%m-%%dT%%H-%%M)" '
-        f"{paths_str} /tmp/altbooster-backup-meta {excludes_str}'\n"
+        f"{paths_str} /tmp/fedorabooster-backup-meta {excludes_str}'\n"
     )
 
     timer_content = (
@@ -992,8 +944,8 @@ def write_systemd_units(repo_path: str, paths: list[str], calendar_expr: str) ->
         "WantedBy=timers.target\n"
     )
 
-    service_file = d / "altbooster-backup.service"
-    timer_file = d / "altbooster-backup.timer"
+    service_file = d / "fedorabooster-backup.service"
+    timer_file = d / "fedorabooster-backup.timer"
     try:
         service_file.write_text(service_content, encoding="utf-8")
         service_file.chmod(0o600)
@@ -1006,7 +958,7 @@ def write_systemd_units(repo_path: str, paths: list[str], calendar_expr: str) ->
 def enable_systemd_timer() -> bool:
     try:
         _run_systemctl(["daemon-reload"])
-        r = _run_systemctl(["enable", "--now", "altbooster-backup.timer"])
+        r = _run_systemctl(["enable", "--now", "fedorabooster-backup.timer"])
         return r.returncode == 0
     except Exception:
         return False
@@ -1014,7 +966,7 @@ def enable_systemd_timer() -> bool:
 
 def disable_systemd_timer() -> bool:
     try:
-        r = _run_systemctl(["disable", "--now", "altbooster-backup.timer"])
+        r = _run_systemctl(["disable", "--now", "fedorabooster-backup.timer"])
         return r.returncode == 0
     except Exception:
         return False
@@ -1022,7 +974,7 @@ def disable_systemd_timer() -> bool:
 
 def is_timer_active() -> bool:
     try:
-        r = _run_systemctl(["is-active", "altbooster-backup.timer"])
+        r = _run_systemctl(["is-active", "fedorabooster-backup.timer"])
         return r.returncode == 0
     except Exception:
         return False
@@ -1030,7 +982,7 @@ def is_timer_active() -> bool:
 
 def get_timer_next_run() -> str | None:
     try:
-        r = _run_systemctl(["show", "altbooster-backup.timer", "--property=NextElapseUSecRealtime"])
+        r = _run_systemctl(["show", "fedorabooster-backup.timer", "--property=NextElapseUSecRealtime"])
         for line in r.stdout.splitlines():
             if "=" in line:
                 val = line.split("=", 1)[1].strip()

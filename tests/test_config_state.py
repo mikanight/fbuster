@@ -10,6 +10,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from core import config
 
 
+_ORIG_CONF_DIR = config.CONFIG_DIR
+_ORIG_STATE_FILE = config.STATE_FILE
+
+
+def _restore_config_paths():
+    config.CONFIG_DIR = _ORIG_CONF_DIR
+    config.STATE_FILE = _ORIG_STATE_FILE
+
+
 class TestStateManagement:
     def test_state_get_default(self):
         assert config.state_get("nonexistent") is None
@@ -150,10 +159,9 @@ class TestConfigConstants:
     def test_dnf_lock_files(self):
         assert "/var/run/dnf.pid" in config.DNF_LOCK_FILES
 
-    def test_config_dir_exists(self):
+    def test_config_dir_name(self):
         from pathlib import Path as _Path
-        original = _Path.home() / ".config" / "altbooster"
-        assert original.name == "altbooster"
+        assert config.CONFIG_DIR.name == "fedorabooster"
 
     def test_state_file_path(self):
         assert config.STATE_FILE.name == "state.json"

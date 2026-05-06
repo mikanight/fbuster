@@ -196,19 +196,3 @@ class TestIsSystemBusyExtended:
             assert checks.is_system_busy() is False
 
 
-class TestSudoUser:
-    def test_sudo_user_from_env(self):
-        import os
-        mock = MagicMock()
-        mock.stdout = "wheel"
-        with patch.dict(os.environ, {"SUDO_USER": "admin"}):
-            with patch("subprocess.run", return_value=mock):
-                assert checks.is_sudo_enabled() is True
-
-    def test_normal_user_from_env(self):
-        import os
-        mock = MagicMock()
-        mock.stdout = "users"
-        with patch.dict(os.environ, {"USER": "john"}):
-            with patch("subprocess.run", return_value=mock):
-                assert checks.is_sudo_enabled() is False

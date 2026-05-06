@@ -64,7 +64,6 @@ from core.mirror import is_uefi, list_available_disks
 from core.privileges import (
     cancel_current,
     run_dnf,
-    run_dnf_sync,
     run_epm,
     run_epm_sync,
     run_privileged,

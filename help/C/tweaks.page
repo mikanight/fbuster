@@ -3,7 +3,7 @@
       id="tweaks">
   <info>
     <link type="guide" xref="index" group="tweaks"/>
-    <desc>Системные твики и экспериментальные оптимизации: sched_ext, ananicy-cpp, переход на Sisyphus.</desc>
+    <desc>Системные твики и экспериментальные оптимизации: sched_ext, ananicy-cpp.</desc>
   </info>
 
   <title>Твики</title>
@@ -37,12 +37,4 @@
     </list>
   </section>
 
-  <section id="sisyphus">
-    <title>Переход на Sisyphus</title>
-    <list>
-      <item><p>Мастер переводит систему с p10/p11 на rolling-ветку Sisyphus.</p></item>
-      <item><p>Перед применением показывается симуляция обновления и объём загрузки.</p></item>
-      <item><p>Предусмотрены предупреждения и кнопка отката репозиториев.</p></item>
-    </list>
-  </section>
 </page>

@@ -269,7 +269,7 @@ class SetupPage(Gtk.Box):
         self._log("\n▶  Сброс настроек vm.dirty...\n")
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Сброс vm.dirty...")
-        backend.run_privileged(["rm", "-f", "/etc/sysctl.d/99-altbooster.conf"], self._log,
+        backend.run_privileged(["rm", "-f", "/etc/sysctl.d/99-fedorabooster.conf"], self._log,
             lambda ok: (row.set_undo_done(ok), self._log("✔  Настройки сброшены (требуется перезагрузка для эффекта)\n" if ok else "✘  Ошибка\n"), win.stop_progress(ok) if hasattr(win, "stop_progress") else None))
 
     def _on_install_sushi(self, row):
@@ -445,7 +445,7 @@ class SetupPage(Gtk.Box):
             "bash", "-c",
             "mkdir -p /etc/systemd/journald.conf.d && "
             "echo -e '[Journal]\\nSystemMaxUse=100M\\nCompress=yes' "
-            "> /etc/systemd/journald.conf.d/99-altbooster.conf && "
+            "> /etc/systemd/journald.conf.d/99-fedorabooster.conf && "
             "systemctl restart systemd-journald",
         ]
         backend.run_privileged(
@@ -459,7 +459,7 @@ class SetupPage(Gtk.Box):
         win = self.get_root()
         if hasattr(win, "start_progress"): win.start_progress("Сброс настроек журнала...")
         backend.run_privileged(
-            ["bash", "-c", "rm -f /etc/systemd/journald.conf.d/99-altbooster.conf && systemctl restart systemd-journald"],
+            ["bash", "-c", "rm -f /etc/systemd/journald.conf.d/99-fedorabooster.conf && systemctl restart systemd-journald"],
             self._log,
             lambda ok: (row.set_undo_done(ok), self._log("✔  Настройки журнала сброшены!\n" if ok else "✘  Ошибка\n"), win.stop_progress(ok) if hasattr(win, "stop_progress") else None),
         )

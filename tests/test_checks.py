@@ -1,4 +1,4 @@
-"""Тесты core/checks.py — Фаза 1."""
+"""Тесты core/checks.py — системные проверки."""
 
 import sys
 from pathlib import Path
@@ -7,24 +7,6 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from core import checks
-
-
-class TestIsSudoEnabled:
-    def test_wheel_group_detected(self):
-        mock_result = MagicMock()
-        mock_result.stdout = "root wheel adm"
-        with patch("subprocess.run", return_value=mock_result):
-            assert checks.is_sudo_enabled() is True
-
-    def test_no_wheel_group(self):
-        mock_result = MagicMock()
-        mock_result.stdout = "users"
-        with patch("subprocess.run", return_value=mock_result):
-            assert checks.is_sudo_enabled() is False
-
-    def test_subprocess_error_returns_false(self):
-        with patch("subprocess.run", side_effect=OSError):
-            assert checks.is_sudo_enabled() is False
 
 
 class TestIsSystemBusy:

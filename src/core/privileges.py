@@ -490,10 +490,6 @@ def run_privileged_sync(cmd: Sequence[str], on_line: OnLine | None) -> bool:
     return _sync_wrapper(run_privileged, cmd, on_line)
 
 
-def run_dnf_sync(cmd: Sequence[str], on_line: OnLine) -> bool:
-    return _sync_wrapper(run_dnf, cmd, on_line)
-
-
 def run_dnf(cmd: Sequence[str], on_line: OnLine, on_done: OnDone) -> None:
     run_privileged(cmd, on_line, on_done)
 

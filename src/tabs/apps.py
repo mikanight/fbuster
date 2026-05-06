@@ -180,7 +180,7 @@ class AppsPage(Gtk.Box):
             return self._search_epm_play(query)
         params = urllib.parse.urlencode({"name": query, "branch": branch})
         url = f"https://rdb.altlinux.org/api/site/find_packages?{params}"
-        req = urllib.request.Request(url, headers={"User-Agent": "ALTBooster/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "FedoraBooster/1.0"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())
         results = []
@@ -257,7 +257,7 @@ class AppsPage(Gtk.Box):
         req = urllib.request.Request(
             "https://flathub.org/api/v2/search",
             data=body,
-            headers={"User-Agent": "ALTBooster/1.0", "Content-Type": "application/json"},
+            headers={"User-Agent": "FedoraBooster/1.0", "Content-Type": "application/json"},
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())

@@ -65,8 +65,8 @@ def get_snapshots_dir() -> Path:
         return Path(conf_dir)
     mount_point = get_btrfs_mount_for_home()
     if mount_point:
-        return Path(mount_point) / ".snapshots" / "altbooster"
-    return Path.home() / ".local" / "share" / "altbooster" / "btrfs-snapshots"
+        return Path(mount_point) / ".snapshots" / "fedorabooster"
+    return Path.home() / ".local" / "share" / "fedorabooster" / "btrfs-snapshots"
 
 
 def _validate_mount_point(mp: str) -> bool:
@@ -258,8 +258,8 @@ def write_btrfs_systemd_units(interval_hours: int, keep_count: int) -> bool:
     )
 
     try:
-        (d / "altbooster-btrfs.service").write_text(service_content, encoding="utf-8")
-        (d / "altbooster-btrfs.timer").write_text(timer_content, encoding="utf-8")
+        (d / "fedorabooster-btrfs.service").write_text(service_content, encoding="utf-8")
+        (d / "fedorabooster-btrfs.timer").write_text(timer_content, encoding="utf-8")
         return True
     except Exception:
         return False
@@ -274,23 +274,23 @@ def _run_systemctl(args: list[str]) -> subprocess.CompletedProcess:
 
 def enable_btrfs_timer() -> bool:
     _run_systemctl(["daemon-reload"])
-    r = _run_systemctl(["enable", "--now", "altbooster-btrfs.timer"])
+    r = _run_systemctl(["enable", "--now", "fedorabooster-btrfs.timer"])
     return r.returncode == 0
 
 
 def disable_btrfs_timer() -> bool:
-    r = _run_systemctl(["disable", "--now", "altbooster-btrfs.timer"])
+    r = _run_systemctl(["disable", "--now", "fedorabooster-btrfs.timer"])
     return r.returncode == 0
 
 
 def is_btrfs_timer_active() -> bool:
-    r = _run_systemctl(["is-active", "altbooster-btrfs.timer"])
+    r = _run_systemctl(["is-active", "fedorabooster-btrfs.timer"])
     return r.returncode == 0
 
 
 def get_btrfs_timer_next_run() -> str | None:
     try:
-        r = _run_systemctl(["show", "altbooster-btrfs.timer", "--property=NextElapseUSecRealtime"])
+        r = _run_systemctl(["show", "fedorabooster-btrfs.timer", "--property=NextElapseUSecRealtime"])
         if r.returncode == 0:
             for line in r.stdout.splitlines():
                 if "=" in line:

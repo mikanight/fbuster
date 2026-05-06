@@ -2,7 +2,7 @@
 import subprocess
 from pathlib import Path
 
-_INSTALLED_DIR = Path("/usr/local/share/help/C/altbooster")
+_INSTALLED_DIR = Path("/usr/local/share/help/C/fedorabooster")
 _LOCAL_DIR = Path(__file__).parent.parent.parent / "help" / "C"
 
 

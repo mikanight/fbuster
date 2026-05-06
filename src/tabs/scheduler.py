@@ -189,7 +189,7 @@ class SchedulerPage(Gtk.Box):
                 win.stop_progress(ok)
 
         backend.run_privileged(
-            ["systemctl", "enable", "--now", "system76-scheduler"],
+            ["bash", "-c", "systemctl daemon-reload && systemctl enable --now system76-scheduler"],
             self._log, _done,
         )
 
