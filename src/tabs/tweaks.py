@@ -10,6 +10,9 @@ from ui.common import load_module
 from ui.rows import TaskRow
 from ui.widgets import make_scrolled_page
 
+# Task IDs from maintenance.json to display on the Tweaks page
+_FIX_TASK_IDS = frozenset({"fix_gdm_usb", "fix_gsconnect", "disable_tracker"})
+
 
 class TweaksPage(Gtk.Box):
     def __init__(self, log_fn):
@@ -31,10 +34,12 @@ class TweaksPage(Gtk.Box):
         except (OSError, json.JSONDecodeError):
             all_tasks = []
 
-        fix_ids = {"fix_gdm_usb", "fix_gsconnect", "disable_tracker"}
-        fix_tasks = [t for t in all_tasks if t["id"] in fix_ids]
+        fix_tasks = [t for t in all_tasks if t["id"] in _FIX_TASK_IDS]
 
         if not fix_tasks:
+            missing = _FIX_TASK_IDS - {t.get("id") for t in all_tasks}
+            if missing:
+                self._log(f"⚠  Задачи не найдены в maintenance.json: {sorted(missing)}\n")
             return
 
         group = Adw.PreferencesGroup()

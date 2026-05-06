@@ -15,43 +15,44 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, GLib, Gtk
 
 from core import backend, config
-from tabs.amd_actions import (
-    apply_lact_config,
-    check_wheel,
-    setup_lact_wheel,
-)
-from tabs.terminal_actions import (
-    add_zsh_aliases,
-    check_ghostty_font,
-    check_shortcut_1,
-    check_shortcut_2,
-    check_zsh_aliases,
-    check_zsh_default,
-    install_fastfetch_config,
-    set_ghostty_font,
-    set_shortcut_1,
-    set_shortcut_2,
-    set_zsh_default,
-)
 
-BUILTIN_REGISTRY: dict[str, Callable] = {
-    "check_shortcut_1":         check_shortcut_1,
-    "set_shortcut_1":           set_shortcut_1,
-    "check_shortcut_2":         check_shortcut_2,
-    "set_shortcut_2":           set_shortcut_2,
-    "check_zsh_default":        check_zsh_default,
-    "set_zsh_default":          set_zsh_default,
-    "check_ghostty_font":        check_ghostty_font,
-    "set_ghostty_font":          set_ghostty_font,
-    "install_fastfetch_config": install_fastfetch_config,
-    "check_zsh_aliases":        check_zsh_aliases,
-    "add_zsh_aliases":          add_zsh_aliases,
-    "check_wheel":              check_wheel,
-    "setup_lact_wheel":         setup_lact_wheel,
-    "apply_lact_config":        apply_lact_config,
-}
-
+BUILTIN_REGISTRY: dict[str, Callable] = {}
 _MAX_CHECK_WORKERS = 8
+
+
+def _ensure_builtins_loaded() -> None:
+    if BUILTIN_REGISTRY:
+        return
+    try:
+        from tabs.amd_actions import apply_lact_config, check_wheel, setup_lact_wheel
+        BUILTIN_REGISTRY.update({
+            "check_wheel":              check_wheel,
+            "setup_lact_wheel":         setup_lact_wheel,
+            "apply_lact_config":        apply_lact_config,
+        })
+    except ImportError:
+        pass
+    try:
+        from tabs.terminal_actions import (
+            add_zsh_aliases, check_ghostty_font, check_shortcut_1, check_shortcut_2,
+            check_zsh_aliases, check_zsh_default, install_fastfetch_config,
+            set_ghostty_font, set_shortcut_1, set_shortcut_2, set_zsh_default,
+        )
+        BUILTIN_REGISTRY.update({
+            "check_shortcut_1":         check_shortcut_1,
+            "set_shortcut_1":           set_shortcut_1,
+            "check_shortcut_2":         check_shortcut_2,
+            "set_shortcut_2":           set_shortcut_2,
+            "check_zsh_default":        check_zsh_default,
+            "set_zsh_default":          set_zsh_default,
+            "check_ghostty_font":        check_ghostty_font,
+            "set_ghostty_font":          set_ghostty_font,
+            "install_fastfetch_config": install_fastfetch_config,
+            "check_zsh_aliases":        check_zsh_aliases,
+            "add_zsh_aliases":          add_zsh_aliases,
+        })
+    except ImportError:
+        pass
 
 from ui.widgets import (
     clear_status,
@@ -107,6 +108,7 @@ def run_check(check: dict | None) -> bool:
         return check.get("value", "") in value
 
     if kind == "builtin":
+        _ensure_builtins_loaded()
         fn = BUILTIN_REGISTRY.get(check.get("fn", ""))
         if fn:
             try:
@@ -184,6 +186,7 @@ class ActionDispatcher:
                     ok = True
 
             elif kind == "builtin":
+                _ensure_builtins_loaded()
                 fn_name = action.get("fn", "")
                 fn = BUILTIN_REGISTRY.get(fn_name)
                 if fn:
