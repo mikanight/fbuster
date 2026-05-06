@@ -97,15 +97,10 @@ class TestAppBranchNames:
 
 
 class TestTweakBrand:
-    def test_scx_text_uses_dnf(self):
-        s = read_file("tabs/scx_sched_ext.py")
-        assert "каталоге пакетов ALT" not in s
-        assert "выводе apt" not in s
-
-    def test_sys76_text_uses_dnf(self):
-        s = read_file("tabs/system76_scheduler.py")
-        assert "через epm ставятся" not in s
-        assert "через dnf ставятся" in s
+    def test_scheduler_is_in_tabs(self):
+        s = read_file("ui/window.py")
+        assert '"scheduler"' in s
+        assert 'SchedulerPage' in s
 
 
 class TestBorgEpmFix:

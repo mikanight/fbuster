@@ -36,6 +36,7 @@ from tabs.setup import SetupPage
 from tabs.terminal import TerminalPage
 from tabs.timesync import BorgPage
 from tabs.tweaks import TweaksPage
+from tabs.scheduler import SchedulerPage
 
 
 class FedoraBoosterWindow(Adw.ApplicationWindow):
@@ -49,6 +50,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         ("davinci",     "DaVinci Resolve", "davinci-symbolic",             DaVinciPage),
         ("maintenance", "Обслуживание",    "emblem-system-symbolic",       MaintenancePage),
         ("tweaks",      "Твики",           "applications-engineering-symbolic", TweaksPage),
+        ("scheduler",   "Планировщик",     "system-run-symbolic",           SchedulerPage),
     ]
     _BORG_TAB = ("borg", "TimeSync", "drive-harddisk-symbolic", BorgPage)
 
@@ -102,7 +104,9 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         self._progress_message = ""
         self._op_card_pct: float | None = None
         self._log_queue = queue.SimpleQueue()
-        self._log_widget = self._build_log_panel()
+        self._last_log_line = ""
+        self._progress_nesting = 0
+        self._on_cancel_cb = None
 
         self.set_title("Fedora Booster")
         settings = self._load_settings()
@@ -152,21 +156,11 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         self._global_search_btn.set_tooltip_text("По утилите Ctrl + K")
         self._global_search_btn.connect("clicked", self._present_global_search)
 
-        self._log_overlay_btn = Gtk.Button()
-        self._log_overlay_btn.set_icon_name("terminal-log-symbolic")
-        self._log_overlay_btn.set_hexpand(False)
-        self._log_overlay_btn.set_vexpand(False)
-        self._log_overlay_btn.add_css_class("circular")
-        self._log_overlay_btn.add_css_class("ab-global-search-btn")
-        self._log_overlay_btn.set_tooltip_text("Лог терминала")
-        self._log_overlay_btn.connect("clicked", lambda *_: self._open_log_overlay())
-
         _fab_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         _fab_box.set_halign(Gtk.Align.END)
         _fab_box.set_valign(Gtk.Align.END)
         _fab_box.set_margin_end(16)
         _fab_box.set_margin_bottom(16)
-        _fab_box.append(self._log_overlay_btn)
         _fab_box.append(self._global_search_btn)
 
         self._op_card = self._build_op_card()
@@ -179,13 +173,11 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         self._content_host_overlay.set_child(stack_overlay)
         self._content_host_overlay.set_vexpand(True)
         self._global_search_panel = None
-        self._log_overlay_panel = None
         self._search_items_cache: list | None = None
         self._search_items_building = False
         self._search_items_built_at: float = 0.0
 
         root.append(self._content_host_overlay)
-        root.append(self._log_widget)
 
         self._split_view = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self._split_view.set_start_child(self._build_sidebar())
@@ -294,17 +286,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
             button.ab-global-search-btn image {
                 -gtk-icon-size: 22px;
             }
-            .ab-log-terminal-panel {
-                padding: 0;
-            }
-            expander.ab-log-expander-compact {
-                margin: 0;
-                padding: 0;
-            }
-            expander.ab-log-expander-compact > box > label {
-                padding-top: 2px;
-                padding-bottom: 2px;
-            }
             .ab-icon-green { color: @success_color; }
             .ab-icon-red   { color: @error_color;   }
             .ab-op-floating-card {
@@ -324,21 +305,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
                 border-radius: 16px;
                 border: 1px solid alpha(@borders, 0.85);
                 box-shadow: 0 8px 28px alpha(black, 0.22);
-            }
-            .ab-log-overlay-header {
-                padding: 10px 10px 8px 16px;
-                border-bottom: 1px solid alpha(@borders, 0.4);
-            }
-            .ab-log-overlay-card scrolledwindow {
-                border-radius: 0 0 15px 15px;
-            }
-            .ab-log-overlay-card textview {
-                background-color: @view_bg_color;
-                border-radius: 0 0 15px 15px;
-            }
-            .ab-log-overlay-card textview > text {
-                background-color: @view_bg_color;
-                border-radius: 0 0 15px 15px;
             }
             /* TimeSync tabs: align icon + label in header */
             viewswitcher.ab-borg-viewswitcher {
@@ -615,141 +581,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         self._apply_tab_label_visibility()
 
 
-    def _build_log_panel(self):
-        self._last_log_line = ""
-        self._progress_nesting = 0
-        self._on_cancel_cb = None
-        self._log_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self._log_container.set_vexpand(True)
-        self._log_container.add_css_class("ab-log-terminal-panel")
-
-        self._log_expander = Gtk.Expander(label="Лог терминала")
-        self._log_expander.add_css_class("ab-log-expander-compact")
-        self._log_expander.set_margin_start(8)
-        self._log_expander.set_margin_top(2)
-        self._log_expander.set_margin_end(8)
-        self._log_expander.set_margin_bottom(2)
-
-        self._log_scroll = Gtk.ScrolledWindow()
-        self._log_scroll.set_vexpand(False)
-        self._log_scroll.set_min_content_height(0)
-        self._log_scroll.set_max_content_height(200)
-        self._log_scroll.set_propagate_natural_height(False)
-
-        self._tv = Gtk.TextView()
-        self._tv.set_editable(False)
-        self._tv.set_monospace(True)
-        self._tv.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-        self._tv.set_vexpand(False)
-        self._tv.set_left_margin(10)
-        self._tv.set_right_margin(10)
-        self._tv.set_top_margin(10)
-        self._tv.set_bottom_margin(10)
-        self._buf = self._tv.get_buffer()
-        self._log_scroll.set_child(self._tv)
-        self._log_expander.set_child(self._log_scroll)
-        self._log_expander.set_expanded(False)
-        self._log_expander.connect("notify::expanded", self._on_log_expander_expanded)
-        self._log_container.append(self._log_expander)
-
-        return self._log_container
-
-    def _on_log_expander_expanded(self, *_):
-        if self._log_expander.get_expanded():
-            self._log_scroll.set_min_content_height(160)
-        else:
-            self._log_scroll.set_min_content_height(0)
-
-    def _build_log_overlay(self):
-        panel = Gtk.Overlay()
-        panel.set_hexpand(True)
-        panel.set_vexpand(True)
-        panel.set_halign(Gtk.Align.FILL)
-        panel.set_valign(Gtk.Align.FILL)
-        panel.set_visible(False)
-
-        backdrop = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        backdrop.add_css_class("ab-log-overlay-backdrop")
-        backdrop.set_hexpand(True)
-        backdrop.set_vexpand(True)
-        bd_click = Gtk.GestureClick()
-        bd_click.connect("pressed", lambda *_: self._close_log_overlay())
-        backdrop.add_controller(bd_click)
-
-        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        card.add_css_class("ab-log-overlay-card")
-        card.set_hexpand(True)
-        card.set_vexpand(True)
-        card.set_halign(Gtk.Align.FILL)
-        card.set_valign(Gtk.Align.FILL)
-        card.set_margin_start(12)
-        card.set_margin_end(12)
-        card.set_margin_top(52)
-        card.set_margin_bottom(52)
-
-        header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        header.add_css_class("ab-log-overlay-header")
-        title = Gtk.Label(label="Лог терминала")
-        title.add_css_class("heading")
-        title.set_hexpand(True)
-        title.set_halign(Gtk.Align.START)
-        self._log_overlay_close_btn = Gtk.Button()
-        self._log_overlay_close_btn.set_icon_name("window-close-symbolic")
-        self._log_overlay_close_btn.add_css_class("flat")
-        self._log_overlay_close_btn.add_css_class("circular")
-        self._log_overlay_close_btn.connect("clicked", lambda *_: self._close_log_overlay())
-        header.append(title)
-        header.append(self._log_overlay_close_btn)
-
-        overlay_tv = Gtk.TextView()
-        overlay_tv.set_buffer(self._buf)
-        overlay_tv.set_editable(False)
-        overlay_tv.set_monospace(True)
-        overlay_tv.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-        overlay_tv.set_left_margin(12)
-        overlay_tv.set_right_margin(12)
-        overlay_tv.set_top_margin(8)
-        overlay_tv.set_bottom_margin(12)
-
-        self._log_overlay_scroll = Gtk.ScrolledWindow()
-        self._log_overlay_scroll.set_vexpand(True)
-        self._log_overlay_scroll.set_child(overlay_tv)
-
-        card.append(header)
-        card.append(self._log_overlay_scroll)
-
-        panel.set_child(backdrop)
-        panel.add_overlay(card)
-        panel.set_measure_overlay(card, False)
-
-        key = Gtk.EventControllerKey()
-        key.connect("key-pressed", self._on_log_overlay_key)
-        panel.add_controller(key)
-
-        return panel
-
-    def _open_log_overlay(self):
-        if self._log_overlay_panel is None:
-            self._log_overlay_panel = self._build_log_overlay()
-            self._content_host_overlay.add_overlay(self._log_overlay_panel)
-            self._content_host_overlay.set_measure_overlay(self._log_overlay_panel, False)
-        self._log_overlay_panel.set_visible(True)
-        self._log_overlay_close_btn.grab_focus()
-        GLib.idle_add(self._scroll_log_overlay_to_bottom)
-
-    def _scroll_log_overlay_to_bottom(self):
-        adj = self._log_overlay_scroll.get_vadjustment()
-        adj.set_value(adj.get_upper() - adj.get_page_size())
-
-    def _close_log_overlay(self):
-        if self._log_overlay_panel:
-            self._log_overlay_panel.set_visible(False)
-
-    def _on_log_overlay_key(self, controller, keyval, keycode, state):
-        if keyval == Gdk.KEY_Escape:
-            self._close_log_overlay()
-            return True
-        return False
 
     def _hide_op_card_if_idle(self) -> None:
         if self._progress_nesting == 0:
@@ -1046,7 +877,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         d.present(self)
 
     def _clear_log(self, *_):
-        self._buf.set_text("")
         self._last_log_line = ""
 
     def _reset_state(self, *_):
@@ -1232,7 +1062,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         GLib.idle_add(_do)
 
     def _on_op_card_clicked(self, gesture, n_press, x, y):
-        self._open_log_overlay()
+        pass
 
     def _on_stop_clicked(self, _):
         if not self._on_cancel_cb:
@@ -1290,8 +1120,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         GLib.idle_add(self._log_internal, text)
 
     def _log_internal(self, text):
-        if not self._log_expander.get_expanded():
-            self._log_expander.set_expanded(True)
         stripped = text.strip()
         if stripped:
             self._last_log_line = stripped
@@ -1299,16 +1127,6 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
                 self._parse_progress_line(stripped)
 
         self._log_queue.put(text)
-
-        end = self._buf.get_end_iter()
-        self._buf.insert(end, text)
-        end = self._buf.get_end_iter()
-        mark = self._buf.get_mark("log_end")
-        if mark is None:
-            mark = self._buf.create_mark("log_end", end, False)
-        else:
-            self._buf.move_mark(mark, end)
-        self._tv.scroll_mark_onscreen(mark)
 
     def _set_op_detail_lines(self, l1: str = "", l2: str = "", l3: str = "") -> None:
         rows = (l1 or "").strip(), (l2 or "").strip(), (l3 or "").strip()

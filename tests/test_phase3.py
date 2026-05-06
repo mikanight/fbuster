@@ -53,21 +53,6 @@ class TestFlatpakPackages:
         assert "apt-get" not in s
 
 
-class TestSystem76Packages:
-    def src(self):
-        return read_file("tabs/system76_scheduler.py")
-
-    def test_uses_cargo_not_rust_cargo(self):
-        s = self.src()
-        assert '"cargo"' in s
-
-    def test_uses_pipewire_devel(self):
-        s = self.src()
-        assert "pipewire-devel" in s
-
-    def test_uses_dnf(self):
-        s = self.src()
-        assert '"dnf"' in s
 
 
 class TestIntelPackages:
@@ -104,8 +89,8 @@ class TestTerminalPython:
 
     def test_dnf_upgrade_alias(self):
         s = self.src()
-        assert "sudo dnf upgrade -y" in s
-        assert "dnf clean all" in s
+        assert "sudo dnf upgrade -y" not in s
+        assert "dnf clean all" not in s
 
 
 class TestTerminalActions:

@@ -53,13 +53,17 @@ _TAB_KEYWORDS: dict[str, tuple[str, ...]] = {
         "твик",
         "фиксы",
         "настройки системы",
-        "ananicy",
-        "ananicy-cpp",
-        "scx",
-        "scx-scheds",
-        "lavd",
-        "sched-ext",
-        "планировщик cpu",
+    ),
+    "scheduler": (
+        "планировщик",
+        "scheduler",
+        "system76",
+        "zorkiy",
+        "приоритеты",
+        "cfs",
+        "nice",
+        "pipewire",
+        "gnome extension",
     ),
     "borg": (
         "timesync",
@@ -334,119 +338,51 @@ def _maintenance_task_items() -> list[GlobalSearchItem]:
 
 
 def _tweaks_section_items() -> list[GlobalSearchItem]:
-    """Секции вкладки «Твики» — не из JSON-модуля."""
-    tab_kw = _TAB_KEYWORDS.get("tweaks", ())
-    _tw_k = "Твики · Планировщик ядра"
-    _tw_p = "Твики · Приоритеты процессов"
+    return []
+
+
+def _scheduler_section_items() -> list[GlobalSearchItem]:
+    tab_kw = _TAB_KEYWORDS.get("scheduler", ())
     return [
         GlobalSearchItem(
-            tab_id="tweaks",
-            title="Поддержка sched_ext в ядре",
-            icon_name="cpu-symbolic",
-            subtitle=_tw_k,
-            keywords=(
-                "sched_ext",
-                "sched ext",
-                "sched-ext",
-                "scx",
-                "ядро",
-                "kernel",
-                "kernel-image",
-                "CONFIG_SCHED_CLASS_EXT",
-                "lavd",
-                "meteor",
-            )
-            + tab_kw,
-            focus_spec="d:sched_ext",
-        ),
-        GlobalSearchItem(
-            tab_id="tweaks",
-            title="Планировщик AMD Ryzen (SCX LAVD)",
-            icon_name="cpu-symbolic",
-            subtitle=_tw_k,
-            keywords=(
-                "scx",
-                "scx-scheds",
-                "scx_lavd",
-                "lavd",
-                "sched-ext",
-                "sched_ext",
-                "планировщик",
-                "планировщик cpu",
-                "cpu",
-                "игры",
-                "игровой",
-                "valve",
-                "igalia",
-                "ryzen",
-                "amd ryzen",
-            )
-            + tab_kw,
-            focus_spec="d:scx",
-        ),
-        GlobalSearchItem(
-            tab_id="tweaks",
-            title="Современный планировщик (ananicy-cpp, от CachyOS)",
+            tab_id="scheduler",
+            title="System76 Scheduler",
             icon_name="system-run-symbolic",
-            subtitle=_tw_p,
-            keywords=(
-                "ananicy",
-                "ananicy-cpp",
-                "ananicy cpp",
-                "приоритет",
-                "приоритеты",
-                "процесс",
-                "процессы",
-                "nice",
-                "cachyos",
-                "cachy",
-                "правила",
-                "современный планировщик",
-                "планировщик linux",
-                "приоритеты процессов",
-            )
-            + tab_kw,
-            focus_spec="d:ananicy",
-        ),
-        GlobalSearchItem(
-            tab_id="tweaks",
-            title="System76 Scheduler (Pop!_OS)",
-            icon_name="computer-symbolic",
-            subtitle=_tw_p,
+            subtitle="Планировщик · COPR kylegospo",
             keywords=(
                 "system76",
                 "system76-scheduler",
-                "pop os",
-                "popos",
-                "pop!_os",
                 "scheduler",
                 "планировщик",
                 "cfs",
                 "nice",
                 "pipewire",
+                "pop os",
+                "pop!_os",
+                "popos",
+                "приоритеты процессов",
             )
             + tab_kw,
-            focus_spec="d:system76_scheduler",
+            focus_spec="d:s76_install",
         ),
         GlobalSearchItem(
-            tab_id="tweaks",
-            title="Планировщик Intel (SCX Meteor)",
-            icon_name="processor-symbolic",
-            subtitle=_tw_k,
+            tab_id="scheduler",
+            title="Zorkiy — расширение GNOME",
+            icon_name="application-x-addon-symbolic",
+            subtitle="Планировщик · трекинг фокусного окна",
             keywords=(
-                "scx_meteor",
-                "scx meteor",
-                "meteor",
-                "intel",
-                "sched_ext",
-                "lp-first",
-                "toxblh",
-                "гибрид",
-                "процессор intel",
-                "планировщик intel",
+                "zorkiy",
+                "gnome",
+                "расширение",
+                "extension",
+                "фокус",
+                "окно",
+                "window",
+                "app-id",
+                "mutter",
             )
             + tab_kw,
-            focus_spec="d:intel_scx_meteor",
+            focus_spec="d:zorkiy_install",
         ),
     ]
 
@@ -535,6 +471,7 @@ def build_all_search_items(
     items.extend(_flatpak_section_items())
     items.extend(_flatpak_installed_app_items())
     items.extend(_tweaks_section_items())
+    items.extend(_scheduler_section_items())
     return items
 
 

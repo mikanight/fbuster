@@ -16,52 +16,6 @@ from core import backend
 from ui.rows import SettingRow
 from ui.widgets import make_scrolled_page, scroll_child_into_view
 
-_ALIASES_BLOCK = r"""
-alias tm="sudo timeshift"
-alias tmc="sudo timeshift --create"
-alias tmd="sudo timeshift --delete"
-alias tmda="sudo timeshift --delete-all"
-alias tml="sudo timeshift --list"
-alias n="fastfetch"
-alias k="uname -rs"
-alias g="gnome-shell --version"
-alias f="lsb_release -sd"
-alias m="inxi -G | grep mesa"
-alias age="stat / | grep Birth:"
-alias ram="sudo dmidecode -t memory | grep Speed"
-alias cpu="lscpu | grep Имя"
-alias cpuc="lscpu"
-alias w="wine --version"
-alias pc="inxi -Ixxx"
-alias net="inxi -Nxxx"
-alias up="sudo dnf upgrade -y && flatpak update --noninteractive -y"
-alias cc="sudo dnf clean all && flatpak uninstall --unused -y && sudo journalctl --vacuum-time=1weeks"
-alias c="clear"
-alias son="sudo systemctl suspend"
-alias reboot="systemctl reboot"
-alias r="systemctl reboot"
-alias ls="ls --color"
-alias l="lsd --date '+%d.%m.%Y %H:%M' -lah"
-alias fli="flatpak install --noninteractive -y flathub"
-alias flr="flatpak remove --noninteractive -y"
-alias fr="flatpak repair"
-alias fl="flatpak list"
-alias gte="gnome-text-editor"
-alias sgte="sudo gnome-text-editor"
-alias fstab="sudo vim /etc/fstab"
-alias bashrc="vim ~/.bashrc"
-alias zshrc="vim ~/.zshrc"
-alias bashrc="vim .bashrc"
-alias grubedit="sudo vim /etc/default/grub"
-alias editgrub="sudo vim /etc/default/grub"
-alias upgrub="sudo grub2-mkconfig -o /boot/grub2/grub.cfg"
-alias grubup="sudo grub2-mkconfig -o /boot/grub2/grub.cfg"
-alias sn="sudo nautilus"
-alias v4="sudo modprobe v4l2loopback"
-alias modeprobe="sudo modprobe v4l2loopback"
-alias vmax="sudo sysctl -w vm.max_map_count=2147483642"
-"""
-
 _FASTFETCH_CONFIG = r"""{
     "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
     "display": {
@@ -193,7 +147,6 @@ class TerminalPage(Gtk.Box):
         self._build_shortcuts_group(body)
         self._build_zsh_group(body)
         self._build_fastfetch_group(body)
-        self._build_aliases_group(body)
         self._register_terminal_search_rows()
 
     def _register_terminal_search_rows(self):
@@ -207,7 +160,6 @@ class TerminalPage(Gtk.Box):
             "firacode_install": self._row_font_install,
             "font_apply": self._row_font_apply,
             "ffcfg_install": self._row_ff_config,
-            "aliases_add": self._row_aliases,
         }
 
     def focus_row_by_id(self, row_id: str) -> bool:
@@ -584,138 +536,6 @@ class TerminalPage(Gtk.Box):
         threading.Thread(target=_do, daemon=True).start()
 
 
-    def _build_aliases_group(self, body):
-        group = Adw.PreferencesGroup()
-        group.set_title("Алиасы PLAFON")
-        group.set_description("Добавляет набор алиасов в ~/.zshrc")
-        body.append(group)
-
-        self._row_aliases = SettingRow(
-            "text-editor-symbolic", "Добавить алиасы в .zshrc",
-            "Алиасы для dnf, flatpak, timeshift, DaVinci и др.", "Добавить",
-            self._on_add_aliases,
-            self._check_aliases,
-            "term_aliases", "Добавлены",
-            self._on_remove_aliases, "Удалить", "user-trash-symbolic"
-        )
-        group.add(self._row_aliases)
-
-    def _check_aliases(self):
-        p = Path(os.path.expanduser("~/.zshrc"))
-        if not p.exists():
-            return False
-        try:
-            return "# --- Fedora Booster Aliases ---" in p.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            return False
-
-    def _on_add_aliases(self, row):
-        fd, tmp_path = tempfile.mkstemp(suffix=".sh", text=True)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(_ALIASES_BLOCK.strip())
-
-        editor_cmd = []
-        if shutil.which("gnome-text-editor"):
-            editor_cmd = ["gnome-text-editor", tmp_path]
-        elif shutil.which("gedit"):
-            editor_cmd = ["gedit", tmp_path]
-        elif shutil.which("nano"):
-            term = shutil.which("ghostty") or shutil.which("ptyxis") or shutil.which("gnome-terminal") or shutil.which("kgx")
-            if term:
-                editor_cmd = [term, "--", "nano", tmp_path]
-
-        if not editor_cmd:
-            editor_cmd = ["xdg-open", tmp_path]
-
-        try:
-            subprocess.Popen(editor_cmd)
-        except Exception as e:
-            self._log(f"✘ Не удалось открыть редактор: {e}\n")
-            return
-
-        dialog = Adw.AlertDialog(
-            heading="Редактирование алиасов",
-            body="Список алиасов открыт во внешнем редакторе.\nВнесите изменения, сохраните файл и нажмите «Применить».",
-        )
-        dialog.add_response("cancel", "Отмена")
-        dialog.add_response("apply", "Применить")
-        dialog.set_response_appearance("apply", Adw.ResponseAppearance.SUGGESTED)
-        dialog.set_default_response("apply")
-        dialog.set_close_response("cancel")
-
-        def _on_response(_d, response):
-            if response == "apply":
-                try:
-                    text = Path(tmp_path).read_text(encoding="utf-8")
-                    self._do_add_aliases(row, text)
-                except Exception as e:
-                    self._log(f"✘ Ошибка чтения файла: {e}\n")
-
-            if os.path.exists(tmp_path):
-                os.unlink(tmp_path)
-
-        dialog.connect("response", _on_response)
-        dialog.present(self.get_root())
-
-    def _do_add_aliases(self, row, text):
-        row.set_working()
-        self._log("\n▶  Добавление алиасов в .zshrc...\n")
-        win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Добавление алиасов...")
-        def _do():
-            p = Path(os.path.expanduser("~/.zshrc"))
-            content = p.read_text(encoding="utf-8") if p.exists() else ""
-
-            final_text = text
-            if "# --- Fedora Booster Aliases ---" not in final_text:
-                final_text = "# --- Fedora Booster Aliases ---\n" + final_text
-            if "# ---------------------------" not in final_text:
-                final_text = final_text.strip() + "\n# ---------------------------"
-
-            if not final_text.startswith("\n"):
-                final_text = "\n" + final_text
-            if not final_text.endswith("\n"):
-                final_text = final_text + "\n"
-
-            if "# --- Fedora Booster Aliases ---" not in content:
-                with open(p, "a", encoding="utf-8") as f:
-                    f.write(final_text)
-            GLib.idle_add(row.set_done, True)
-            GLib.idle_add(self._log, "✔  Алиасы добавлены\n")
-            if hasattr(win, "stop_progress"): win.stop_progress(True)
-        threading.Thread(target=_do, daemon=True).start()
-
-    def _on_remove_aliases(self, row):
-        row.set_working()
-        self._log("\n▶  Удаление алиасов из .zshrc...\n")
-        win = self.get_root()
-        if hasattr(win, "start_progress"): win.start_progress("Удаление алиасов...")
-        def _do():
-            p = Path(os.path.expanduser("~/.zshrc"))
-            if p.exists():
-                content = p.read_text(encoding="utf-8")
-                if "# --- Fedora Booster Aliases ---" in content:
-                    new_content = content.replace(_ALIASES_BLOCK, "")
-                    if new_content == content:
-                        lines = content.splitlines()
-                        new_lines = []
-                        skip = False
-                        for line in lines:
-                            if line.strip() == "# --- Fedora Booster Aliases ---":
-                                skip = True
-                            if not skip:
-                                new_lines.append(line)
-                            if line.strip() == "# ---------------------------":
-                                skip = False
-                        new_content = "\n".join(new_lines) + "\n"
-
-                    p.write_text(new_content, encoding="utf-8")
-            GLib.idle_add(row.set_undo_done, True)
-            GLib.idle_add(self._log, "✔  Алиасы удалены\n")
-            if hasattr(win, "stop_progress"): win.stop_progress(True)
-        threading.Thread(target=_do, daemon=True).start()
-
-
     def _on_apply_all(self, btn):
         btn.set_sensitive(False)
         self._log("\n▶  Применение всех настроек терминала...\n")
@@ -812,18 +632,6 @@ class TerminalPage(Gtk.Box):
             p.write_text(_FASTFETCH_CONFIG, encoding="utf-8")
             return True
         run_step(self._row_ff_config, "Конфиг Fastfetch", _sync_ff_config)
-
-        def _sync_aliases():
-            p = Path(os.path.expanduser("~/.zshrc"))
-            content = p.read_text(encoding="utf-8") if p.exists() else ""
-            if "# --- Fedora Booster Aliases ---" not in content:
-                text = _ALIASES_BLOCK.strip()
-                if not text.startswith("\n"): text = "\n" + text
-                if not text.endswith("\n"): text = text + "\n"
-                with open(p, "a", encoding="utf-8") as f:
-                    f.write(text)
-            return True
-        run_step(self._row_aliases, "Алиасы", _sync_aliases)
 
         GLib.idle_add(btn.set_sensitive, True)
         GLib.idle_add(self._log, "\n✔  Все настройки терминала применены!\n")

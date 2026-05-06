@@ -31,7 +31,6 @@ class TestUpdateGrubReplaced:
     def test_terminal_py_grub2_mkconfig(self):
         s = read_file("tabs/terminal.py")
         assert "grub-mkconfig" not in s
-        assert "grub2-mkconfig" in s
 
     def test_terminal_actions_py_grub2_mkconfig(self):
         s = read_file("tabs/terminal_actions.py")
@@ -39,20 +38,10 @@ class TestUpdateGrubReplaced:
 
 
 class TestAptGetCleanups:
-    def test_tweaks_py_uses_dnf(self):
-        s = read_file("core/tweaks.py")
-        assert "apt-get" not in s
-        assert "dnf" in s
-
     def test_rows_py_uses_dnf_makecache(self):
         s = read_file("ui/rows.py")
         assert "apt-get" not in s
         assert "dnf makecache" in s
-
-    def test_scx_sched_ext_uses_dnf(self):
-        s = read_file("tabs/scx_sched_ext.py")
-        assert "apt-get" not in s
-        assert "dnf" in s
 
     def test_extensions_py_uses_dnf(self):
         s = read_file("tabs/extensions.py")

@@ -14,7 +14,16 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk
 
 from core import backend
-from core.sched_ext import has_sched_ext
+import os
+
+_KERNEL_IMAGE_SCHED_EXT = "kernel"
+_SYSFS_SCHED_EXT = "/sys/kernel/sched_ext"
+_PACKAGE_SCHED_EXT = _KERNEL_IMAGE_SCHED_EXT
+
+
+
+def _has_sched_ext():
+    return os.path.exists(_SYSFS_SCHED_EXT)
 from ui.rows import SettingRow
 
 _SCX_METEOR_BIN = "/usr/local/bin/scx_meteor"
@@ -186,7 +195,7 @@ class ScxMeteorTweaksSection:
             win.start_progress("Установка scx_meteor...")
 
         def _thread():
-            if not has_sched_ext():
+            if not _has_sched_ext():
                 def _fail():
                     self._log(
                         "✘  В текущем ядре нет sched_ext. Установите ядро через блок "
@@ -288,7 +297,7 @@ class ScxMeteorTweaksSection:
             win.start_progress("Включение scx_meteor...")
 
         def _thread():
-            if not has_sched_ext():
+            if not _has_sched_ext():
                 def _fail():
                     self._log(
                         "✘  В текущем ядре нет sched_ext. Установите ядро через блок "
