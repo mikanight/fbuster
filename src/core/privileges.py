@@ -51,6 +51,8 @@ _INTERNAL_CMDS: frozenset[str] = frozenset({
     "git",
     "tar",
     "find",
+    "cat",
+    "test",
 })
 
 _CMD_WHITELIST: frozenset[str] = _SAFE_CMDS | _INTERNAL_CMDS
