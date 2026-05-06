@@ -4,13 +4,13 @@
 
 Утилита для тонкой настройки и обслуживания Fedora Linux.
 
-Форк [ALT Booster](https://github.com/plafonlinux/altbooster), адаптированный под Fedora Workstation (GNOME). Интерфейс на GTK4/Adwaita.
+Форк [ALT Booster](https://github.com/plafonlinux/altbooster), адаптированный под Fedora Workstation (GNOME). Интерфейс на GTK4/Libadwaita.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Fedora%20Linux-blue)](https://fedoraproject.org)
 [![GTK](https://img.shields.io/badge/GTK-4.0-green)](https://gtk.org)
 [![Python](https://img.shields.io/badge/Python-3.11+-yellow)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-345%20passed-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-332%20passed-brightgreen)]()
 
 </div>
 
@@ -18,37 +18,74 @@
 
 ## О проекте
 
-**Fedora Booster** — форк [ALT Booster](https://github.com/plafonlinux/altbooster) от [PLAFON](https://github.com/plafonlinux), адаптированный под Fedora Linux:
+**Fedora Booster** — форк [ALT Booster](https://github.com/plafonlinux/altbooster) от [PLAFON](https://github.com/plafonlinux), адаптированный под Fedora Linux. Приложение предоставляет единый интерфейс для:
 
-- **Пакетный менеджер:** DNF/DNF5 вместо apt-get/EPM
-- **Приложения:** каталог 50+ приложений (Flatpak, DNF, GitHub)
-- **Расширения GNOME:** каталог из 20 расширений (extensions.gnome.org + GitHub)
-- **Системные твики:** адаптированы под Fedora (systemd, journald, fstrim, Btrfs)
-- **Безопасность:** привилегированные операции через pkexec + PolicyKit
+- Установки и удаления приложений из DNF, Flatpak и GitHub
+- Управления расширениями GNOME Shell
+- Системных твиков (journald, fstrim, Btrfs, раскладки клавиатуры)
+- Настройки терминала (Ghostty, ZSH, Fastfetch)
+- Обслуживания системы (очистка кэша, TRIM, Btrfs scrub)
+- Резервного копирования через BorgBackup (TimeSync)
+- Установки System76 Scheduler с расширением Zorkiy
+
+Интерфейс — 10 вкладок в боковой панели, глобальный поиск (Ctrl+K), обработка ошибок DNF с автоматическим `dnf makecache`.
 
 ## Возможности
 
 ### Приложения и расширения
+- Каталог 50+ приложений (Flatpak, DNF, GitHub, COPR)
 - Умный предпросмотр перед установкой (список пакетов, размер загрузки)
 - Автоисправление ошибок: при устаревших индексах выполняет `dnf makecache` и повторяет установку
 - Data-Driven UI — интерфейс генерируется из JSON-файлов
+- 20+ расширений GNOME (extensions.gnome.org + GitHub)
 
 ### Система (вкладка «Начало»)
+- Обновление системы (`dnf upgrade`)
 - Автообновление GNOME Software, TRIM (fstrim.timer), лимиты journald
 - Дробное масштабирование, настройка Nautilus, иконки Papirus
-- Раскладки клавиатуры: Alt+Shift, CapsLock, Ctrl+Shift, Win+Space с откатом
+- Раскладки клавиатуры: Alt+Shift, CapsLock, Ctrl+Shift, Win+Space
 
-### Обслуживание и твики
-- Очистка кэша DNF/Flatpak, Btrfs scrub/balance, SSD TRIM
-- GNOME Shell патчи, планировщик System76 Scheduler
+### Терминал
+- Установка Ghostty из COPR (`scottames/ghostty`)
+- Настройка ZSH + Fastfetch + Fira Code
+- Горячие клавиши (Ctrl+Alt+T, Super+Enter)
+
+### AMD Radeon
+- Разгон и андервольтинг
+- LACT: установка, добавление в wheel, импорт конфига
+
+### DaVinci Resolve
+- Установка пакетов (ROCm, OpenCL, Fairlight, AAC)
+- Автоматическая настройка `vm.max_map_count` и OpenCL
+
+### Обслуживание
+- Очистка кэша DNF/Flatpak/журналов/эскизов
+- Btrfs scrub/balance, SSD TRIM
+- Оптимизация виртуальной памяти, лимиты journald
+
+### Твики
+- Исправление конфликта GDM с USB-устройствами
+- Исправление GSConnect (KDE Connect для GNOME)
+- Отключение Tracker Miner (индексация файлов)
+
+### Планировщик
+- Установка **System76 Scheduler** из COPR (`kylegospo/system76-scheduler`)
+- Включение/отключение systemd-службы
+- Установка расширения **Zorkiy** — отслеживание фокусного окна для приоритизации CPU
 
 ### Резервное копирование (TimeSync)
-- Бэкапы через BorgBackup, зеркалирование системы на внешний диск (Btrfs send/receive)
-- Сохранение метаданных: список пакетов, Flatpak-приложений, dconf
+- Полные и инкрементальные бэкапы через BorgBackup
+- Зеркалирование системы на внешний диск (Btrfs send/receive)
+- Сохранение метаданных: список RPM-пакетов, Flatpak-приложений, dconf
+- Планировщик через systemd-таймеры
 
-### AMD / Intel
-- AMD Radeon: разгон, управление через LACT
-- Intel: планировщик sched_ext (scx_meteor)
+## Безопасность
+
+- Привилегированные операции — через `pkexec` + PolicyKit с валидацией команд
+- Whitelist допустимых команд (`dnf`, `systemctl`, `btrfs`, `rsync`, …)
+- Валидация shell-скриптов (запрет `curl | sh`, `chmod 777`, `>/dev/`)
+- Без `--nogpgcheck` — все COPR-пакеты проверяются через GPG
+- Удалён механизм self-update (скачивание и выполнение скриптов с GitHub)
 
 ## Требования
 
@@ -60,11 +97,11 @@
 ## Установка
 
 ```bash
-# Из GitHub
 git clone https://github.com/mikanight/fbuster.git
 cd fbuster
-./install.sh
+sudo ./install.sh
 ```
+
 Скоро соберу пакет.
 
 ## Запуск
@@ -75,10 +112,8 @@ fedorabooster -s              # вкладка «Начало»
 fedorabooster -a              # вкладка «Приложения»
 fedorabooster -e              # вкладка «Расширения»
 fedorabooster -m              # вкладка «Обслуживание»
-fedorabooster --debug         # режим отладки
+fedorabooster --debug         # режим отладки (G_MESSAGES_DEBUG=all + exception hook)
 ```
-
-Удаление: `./uninstall.sh`
 
 ## Отличия от ALT Booster
 
@@ -88,11 +123,16 @@ fedorabooster --debug         # режим отладки
 | `epm -i` / `epm -e` | `dnf install` / `dnf remove` |
 | `apt-get update` | `dnf makecache` |
 | `update-grub` | `grub2-mkconfig` |
-| `usermod -aG wheel` | удалено (Fedora включает sudo по умолчанию) |
-| `nautilus-admin-gtk4` | удалено (нет в Fedora) |
+| `usermod -aG wheel` | удалено |
+| `nautilus-admin-gtk4` | удалено |
 | `papirus-remix-icon-theme` | `papirus-icon-theme` |
 | `altbooster` (команда) | `fedorabooster` |
-| ananicy-cpp, LAVD | System76 Scheduler |
+| ananicy-cpp, LAVD, sched_ext | System76 Scheduler (COPR) |
+| Ptyxis | Ghostty (COPR) |
+| zplug, ALT Zero, Sisyphus | удалено |
+| Нижняя лог-панель | удалено |
+| Self-update через GitHub | удалено |
+| Intel SCX Meteor | удалено |
 
 ## Разработка
 
@@ -101,7 +141,7 @@ git clone https://github.com/mikanight/fbuster.git
 cd fbuster
 pip install -e .
 
-pytest tests/ -q              # тесты (345)
+pytest tests/ -q              # тесты (332)
 ruff check src/ tests/        # линтер
 ```
 
@@ -110,10 +150,10 @@ ruff check src/ tests/        # линтер
 ```
 src/
 ├── altbooster.py          # Точка входа
-├── core/                  # Бэкенд (система, DNF, Borg, Btrfs, pkexec)
+├── core/                  # Бэкенд (privileges, backend, checks, config, borg, mirror, packages)
 ├── modules/               # JSON-описания для Data-Driven UI
-├── tabs/                  # Вкладки (setup, apps, extensions, flatpak, terminal, amd, davinci, maintenance, tweaks, timesync)
-└── ui/                    # UI-компоненты (window, rows, dynamic_page, style.css)
+├── tabs/                  # Вкладки (setup, apps, extensions, flatpak, terminal, amd, davinci, maintenance, tweaks, scheduler, timesync)
+└── ui/                    # UI-компоненты (window, rows, dynamic_page, global_search, widgets)
 ```
 
 ## Лицензия
