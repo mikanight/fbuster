@@ -850,7 +850,7 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
     def _show_about(self, *_):
         d = Adw.AboutDialog()
         d.set_application_name("Fedora Booster")
-        d.set_application_icon("altbooster")
+        d.set_application_icon("fedorabooster")
         d.set_developer_name("mikanight")
         d.set_version(config.VERSION)
         d.set_issue_url("https://github.com/mikanight/fbuster/issues")
