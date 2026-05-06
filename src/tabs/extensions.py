@@ -134,13 +134,6 @@ RECOMMENDED = [
         "Кастомизация поиска приложений в обзоре GNOME.",
         "928",
     ),
-    # === 2 из GitHub ===
-    (
-        "zorkiy@toxblh.ru",
-        "Zorkiy",
-        "Инструмент для мониторинга и управления приоритетами процессов. Требует system76-scheduler.",
-        "github:https://github.com/Toxblh/gnome-shell-extension-zorkiy",
-    ),
 ]
 
 _USER_EXT_DIR   = Path.home() / ".local" / "share" / "gnome-shell" / "extensions"

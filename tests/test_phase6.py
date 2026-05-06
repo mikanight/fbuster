@@ -56,8 +56,8 @@ class TestExtensionsCatalog:
 
     def test_github_extensions_included(self):
         s = self.src()
-        assert "zorkiy@toxblh.ru" in s
-        assert "github:https://github.com/Toxblh/gnome-shell-extension-zorkiy" in s
+        assert "zorkiy@toxblh.ru" not in s
+        assert "github:https://github.com/Toxblh/gnome-shell-extension-zorkiy" not in s
         assert "icon-matcher" not in s
 
     def test_epm_install_removed(self):
