@@ -73,7 +73,6 @@ _DANGEROUS_SHELL_PATTERNS: list[str] = [
 ]
 
 def _validate_shell_script(script: str) -> str | None:
-    import re
     for pattern in _DANGEROUS_SHELL_PATTERNS:
         if re.search(pattern, script, re.IGNORECASE):
             return f"bash/sh: опасный паттерн в скрипте ({pattern!r})"

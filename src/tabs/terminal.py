@@ -566,7 +566,7 @@ class TerminalPage(Gtk.Box):
             return ok
 
         run_step(self._row_ghostty_install, "Установка Ghostty",
-            lambda: backend.run_privileged_sync(["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y --nogpgcheck ghostty"], self._log))
+            lambda: backend.run_privileged_sync(["bash", "-c", "dnf copr enable scottames/ghostty -y && dnf install -y ghostty"], self._log))
 
         def _sync_shortcut(uid, name, cmd, binding):
             path = f"/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/{uid}/"

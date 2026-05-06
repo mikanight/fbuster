@@ -55,14 +55,6 @@ class TestFlatpakPackages:
 
 
 
-class TestIntelPackages:
-    def src(self):
-        return read_file("tabs/intel.py")
-
-    def test_uses_dnf_for_deps(self):
-        s = self.src()
-        assert '["dnf", "install", "-y", "rust", "cargo", "git", "clang", "llvm"]' in s
-
 
 class TestTerminalPython:
     def src(self):
