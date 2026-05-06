@@ -858,12 +858,18 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         d.set_license_type(Gtk.License.MIT_X11)
         d.set_developers(
             [
+                "plafonlinux (@plafonlinux)",
+                "Aleksandr Shamaraev (@AlexanderShad)",
+                "Anton Palgunov (@Toxblh)",
+                "Yauhen Charniauski (@culler127)",
+                "Vadim Totok (@VadimTotok)",
                 "Andrei Komissarov (@mikanight)",
             ]
         )
-        d.set_copyright("© 2026 mikanight")
+        d.set_copyright("© 2026 PLAFON, mikanight")
         d.add_link("💻 GitHub", "https://github.com/mikanight/fbuster")
         d.add_link("👤 mikanight", "https://github.com/mikanight")
+        d.add_link("👤 plafonlinux", "https://github.com/plafonlinux")
         d.present(self)
 
     def _clear_log(self, *_):

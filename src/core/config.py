@@ -14,9 +14,9 @@ _PYPROJECT = Path(__file__).resolve().parent.parent.parent / "pyproject.toml"
 try:
     import tomllib
     _data = tomllib.loads(_PYPROJECT.read_text(encoding="utf-8"))
-    VERSION = str(_data.get("project", {}).get("version", "6.0.0-dev"))
+    VERSION = str(_data.get("project", {}).get("version", "0.0.1-alfa"))
 except Exception:
-    VERSION = "6.0.0-dev"
+    VERSION = "0.0.1-alfa"
 
 DEBUG: bool = False
 INITIAL_TAB: str = ""
