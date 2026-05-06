@@ -870,6 +870,9 @@ class FedoraBoosterWindow(Adw.ApplicationWindow):
         d.add_link("💻 GitHub", "https://github.com/mikanight/fbuster")
         d.add_link("👤 mikanight", "https://github.com/mikanight")
         d.add_link("👤 plafonlinux", "https://github.com/plafonlinux")
+        d.add_credit_section("Иконка", [
+            "yeyushengfan258 — Reversal-icon-theme (GPL-3.0)",
+        ])
         d.present(self)
 
     def _clear_log(self, *_):
